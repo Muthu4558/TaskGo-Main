@@ -18,7 +18,7 @@ export default connectDB;
 
 export const createJWT = (res, userId) => {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: "10d",
+    expiresIn: "1d",
   });
 
   // Change sameSite from strict to none when you deploy your app
