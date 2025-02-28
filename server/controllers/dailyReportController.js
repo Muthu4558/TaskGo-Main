@@ -5,8 +5,8 @@ import User from "../models/user.js";
 const transporter = nodemailer.createTransport({
   service: "gmail", 
   auth: {
-    user: "muthukdm45@gmail.com",
-    pass: "wbnr wwjj bjif vgaq",   // Replace with your email password or app-specific password
+    user: "taskmanager@mamce.org",
+    pass: "fchs ppue ehkq lfzi",   // Replace with your email password or app-specific password
   },
 });
 
