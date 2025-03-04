@@ -31,7 +31,9 @@ const HomePage = () => {
 
   return (
     <div className="w-full h-screen flex flex-col justify-center items-center bg-gray-100">
-      <h1 className="text-3xl font-bold mb-4">Website Comming Soon......</h1>
+      <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-4 text-center">
+         Website Coming Soon...
+      </h1>
       <h1 className="text-2xl font-bold mb-4">Login to TaskGo</h1>
       <div className="flex gap-3">
       <button
