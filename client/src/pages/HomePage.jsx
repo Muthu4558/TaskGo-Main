@@ -31,9 +31,11 @@ const HomePage = () => {
 
   return (
     <div className="w-full h-screen flex flex-col justify-center items-center bg-gray-100">
-      <h1 className="text-3xl font-bold mb-4">Welcome to TaskGo</h1>
+      <h1 className="text-3xl font-bold mb-4">Website Comming Soon......</h1>
+      <h1 className="text-2xl font-bold mb-4">Login to TaskGo</h1>
+      <div className="flex gap-3">
       <button
-        className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition mb-4"
+        className="px-6 py-3 bg-[#229ea6] text-white rounded-md transition"
         onClick={() => navigate("/log-in")}
       >
         Login
@@ -44,6 +46,7 @@ const HomePage = () => {
       >
         Pay
       </button>
+      </div>
     </div>
   );
 };
