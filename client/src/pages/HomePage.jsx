@@ -9,6 +9,7 @@ import Features from "../components/Features";
 // import Pricing from "../components/Pricing";
 import Footer from "../components/Footer";
 import NavbarWeb from "../components/NavbarWeb";
+import Why from "../components/Why";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -61,14 +62,15 @@ const HomePage = () => {
       </button> */}
       {/* </div> */}
       <div>
-      <NavbarWeb />
+     <NavbarWeb />
       <Hero />
       <TryTaskGo />
       <Companies />
-      <DashboardImg />
       <Allinonebg />
+      <DashboardImg />
       <Features />
-{/*       <Pricing /> */}
+      {/* <Pricing /> */}
+      <Why/>
       <Footer />
     </div>
     </div>
