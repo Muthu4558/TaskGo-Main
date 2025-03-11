@@ -23,7 +23,7 @@ const Why = () => {
                 className="relative px-8 py-3 text-lg font-bold text-white bg-gradient-to-r from-[#229ea6] to-[#668f92] rounded-full shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl animate-pulse"
                 onClick={() => navigate("/log-in")}
             >
-                Start Your Free Trial 🚀
+                Start Free 🚀
             </button>
 
             {/* Animated floating particles effect */}
