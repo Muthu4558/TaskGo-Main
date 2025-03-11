@@ -1,8 +1,8 @@
-import React from 'react'
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import EmailPopup from "./EmailPopup";
 
 const Why = () => {
-    const navigate = useNavigate();
+  const [showPopup, setShowPopup] = useState(false);
   return (
     <div>
         <div className="relative text-center my-12 py-16 overflow-hidden bg-gray-900">
@@ -21,10 +21,12 @@ const Why = () => {
 
             <button 
                 className="relative px-8 py-3 text-lg font-bold text-white bg-gradient-to-r from-[#229ea6] to-[#668f92] rounded-full shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl animate-pulse"
-                onClick={() => navigate("/log-in")}
+                onClick={() => setShowPopup(true)}
             >
-                Start Free 🚀
+                Use For Free 🚀
             </button>
+
+            {showPopup && <EmailPopup onClose={() => setShowPopup(false)} />}
 
             {/* Animated floating particles effect */}
             <div className="absolute inset-0 pointer-events-none">
@@ -49,9 +51,9 @@ const Why = () => {
                 </p>
             </div>
             <div className='mb-10 bg-gradient-to-r from-[#229ea6] to-[#668f92] text-white p-6 rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl'>
-                <h2 className='text-3xl font-bold mt-10'>Affordable & Scalable 🔥</h2>
+                <h2 className='text-3xl font-bold mt-10'>Completely Free – No Hidden Costs🔥</h2>
                 <p className='text-lg mt-3'>
-                    From startups to enterprises, TaskGo offers flexible pricing plans that grow with your team.
+                    TaskGo is 100% free to use, giving teams of all sizes access to powerful task management features—no subscriptions, no hidden fees!
                 </p>
             </div>
         </div>
