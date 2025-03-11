@@ -1,5 +1,14 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import Hero from "../components/Hero";
+import TryTaskGo from "../components/TryTaskGo";
+import Companies from "../components/Companies";
+import DashboardImg from "../components/DashboardImg";
+import Allinonebg from "../components/Allinonebg";
+import Features from "../components/Features";
+import Pricing from "../components/Pricing";
+import Footer from "../components/Footer";
+import NavbarWeb from "../components/NavbarWeb";
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -30,12 +39,8 @@ const HomePage = () => {
   };
 
   return (
-    <div className="w-full h-screen flex flex-col justify-center items-center bg-gray-100">
-      <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold mb-4 text-center">
-         Website Coming Soon...
-      </h1>
-      <h1 className="text-2xl font-bold mb-4">Login to TaskGo</h1>
-      <div className="flex gap-3">
+    <div >
+      {/* <div className="flex gap-3">
       <button
         className="px-6 py-3 bg-[#229ea6] text-white rounded-md transition"
         onClick={() => navigate("/log-in")}
@@ -47,8 +52,25 @@ const HomePage = () => {
         onClick={handlePayment}
       >
         Pay
-      </button>
-      </div>
+      </button> */}
+      {/* <button
+        className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+        onClick={handlePayment1}
+      >
+        Pay
+      </button> */}
+      {/* </div> */}
+      <div>
+      <NavbarWeb />
+      <Hero />
+      <TryTaskGo />
+      <Companies />
+      <DashboardImg />
+      <Allinonebg />
+      <Features />
+      <Pricing />
+      <Footer />
+    </div>
     </div>
   );
 };
