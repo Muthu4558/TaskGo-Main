@@ -9,8 +9,8 @@ const Hero = () => {
         <>
             <div className="relative flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto h-screen p-4 mt-5">
                 <div className="md:w-1/2 p-4 flex flex-col justify-center mt-28 lg:mt-0 md:mt-0 text-left">
-                    <h1 className="text-3xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-[#229ea6] to-[#668f92] bg-clip-text text-transparent">
-                        Organize and track all tasks in a single place.
+                    <h1 className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-[#229ea6] to-[#668f92] bg-clip-text text-transparent">
+                        Smarter Task Management for Growing Teams
                     </h1>
                     <p className="text-lg mb-4 text-justify">
                         The Cloud-Based TaskGo is a web application built to simplify team task management. It offers a user-friendly interface for seamless task assignment, tracking, and collaboration. Designed for both administrators and regular users, the platform provides robust features to boost productivity and organization.
