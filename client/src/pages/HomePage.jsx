@@ -6,7 +6,7 @@ import Companies from "../components/Companies";
 import DashboardImg from "../components/DashboardImg";
 import Allinonebg from "../components/Allinonebg";
 import Features from "../components/Features";
-import Pricing from "../components/Pricing";
+// import Pricing from "../components/Pricing";
 import Footer from "../components/Footer";
 import NavbarWeb from "../components/NavbarWeb";
 
@@ -68,7 +68,7 @@ const HomePage = () => {
       <DashboardImg />
       <Allinonebg />
       <Features />
-      <Pricing />
+{/*       <Pricing /> */}
       <Footer />
     </div>
     </div>
