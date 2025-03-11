@@ -1,10 +1,10 @@
-import React from 'react';
-import { useNavigate } from "react-router-dom";
+import React, { useState } from "react";
 import herobg from '../assets/images/WebsiteImg/hero-bg.jpg';
 import bannerVideo from '../assets/video/bannerVideo.mp4';
+import EmailPopup from "./EmailPopup";
 
 const Hero = () => {
-    const navigate = useNavigate();
+    const [showPopup, setShowPopup] = useState(false);
     return (
         <>
             <div className="relative flex flex-col md:flex-row items-center justify-between max-w-7xl mx-auto h-screen p-4 mt-5">
@@ -18,10 +18,11 @@ const Hero = () => {
                     <div className="flex text-left">
                         <button
                             className="gap-4 px-4 py-2 bg-[#229ea6] text-white rounded hover:bg-[#000000] transition duration-300 ease-in-out transform hover:scale-105 flex items-center space-x-2"
-                            onClick={() => navigate("/log-in")}
+                            onClick={() => setShowPopup(true)}
                         >
-                            Start Free Trail
+                            Use For Free 🚀
                         </button>
+                        {showPopup && <EmailPopup onClose={() => setShowPopup(false)} />}
                     </div>
                 </div>
                 <div className="md:w-2/3 p-4 flex justify-center">
