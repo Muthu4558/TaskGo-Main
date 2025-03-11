@@ -1,5 +1,5 @@
 import React from 'react'
-import allinonebg from '../assets/images/WebsiteImg/allinone-bg.webp';
+import allinonebg from '../assets/images/WebsiteImg/allinonebg.png';
 
 const Allinonebg = () => {
   return (
@@ -9,7 +9,7 @@ const Allinonebg = () => {
         style={{ backgroundImage: `url(${allinonebg})` }}
       >
         {/* Overlay (Optional, for better readability) */}
-        <div className="absolute inset-0 bg-black bg-opacity-75"></div>
+        <div className="absolute inset-0 bg-black bg-opacity-50"></div>
 
         {/* Content */}
         <div className="relative text-center text-white">
