@@ -37,25 +37,27 @@ const Why = () => {
         <h1 className='max-w-7xl mx-auto mt-10 text-center text-5xl font-bold'>
             Why Choose TaskGo?
         </h1>
-        <div className='max-w-7xl mx-auto md:flex gap-8 my-10'>
-            <div className='mb-10 bg-gradient-to-r from-[#229ea6] to-[#668f92] text-white p-6 rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl'>
-                <h2 className='text-3xl font-bold mt-10'>Boost Productivity by 40% 🚀</h2>
-                <p className='text-lg mt-3'>
-                    TaskGo helps teams stay focused, organized, and efficient, so you get more done in less time.
-                </p>
-            </div>
-            <div className='mb-10 bg-gradient-to-r from-[#229ea6] to-[#668f92] text-white p-6 rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl'>
-                <h2 className='text-3xl font-bold mt-10'>Simplify Collaboration 💡</h2>
-                <p className='text-lg mt-3'>
-                    Whether you're working remotely or in-office, TaskGo brings your team together in one place.
-                </p>
-            </div>
-            <div className='mb-10 bg-gradient-to-r from-[#229ea6] to-[#668f92] text-white p-6 rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl'>
-                <h2 className='text-3xl font-bold mt-10'>Completely Free – No Hidden Costs🔥</h2>
-                <p className='text-lg mt-3'>
-                    TaskGo is 100% free to use, giving teams of all sizes access to powerful task management features—no subscriptions, no hidden fees!
-                </p>
-            </div>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 my-10">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-gradient-to-r from-[#229ea6] to-[#668f92] text-white p-6 rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl">
+            <h2 className="text-2xl md:text-3xl font-bold mt-5 md:mt-10">Boost Productivity by 40% 🚀</h2>
+            <p className="text-base md:text-lg mt-3">
+                TaskGo helps teams stay focused, organized, and efficient, so you get more done in less time.
+            </p>
+        </div>
+        <div className="bg-gradient-to-r from-[#229ea6] to-[#668f92] text-white p-6 rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl">
+            <h2 className="text-2xl md:text-3xl font-bold mt-5 md:mt-10">Simplify Collaboration 💡</h2>
+            <p className="text-base md:text-lg mt-3">
+                Whether you're working remotely or in-office, TaskGo brings your team together in one place.
+            </p>
+        </div>
+        <div className="bg-gradient-to-r from-[#229ea6] to-[#668f92] text-white p-6 rounded-lg shadow-lg transition-transform duration-300 ease-in-out hover:scale-105 hover:shadow-2xl">
+            <h2 className="text-2xl md:text-3xl font-bold mt-5 md:mt-10">Completely Free – No Hidden Costs🔥</h2>
+            <p className="text-base md:text-lg mt-3">
+                TaskGo is 100% free to use, giving teams of all sizes access to powerful task management features—no subscriptions, no hidden fees!
+            </p>
+        </div>
+    </div>
         </div>
     </div>
   )
