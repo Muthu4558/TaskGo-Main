@@ -3,16 +3,7 @@ import { useNavigate } from "react-router-dom";
 import gsap from "gsap";
 import logo from "../assets/images/WebsiteImg/logo2.png";
 import { RiContactsFill } from "react-icons/ri";
-
-const Loading = () => {
-    return (
-        <div className='dots-container flex justify-center gap-1 mt-2'>
-            <div className='dot w-2 h-2 bg-gray-500 rounded-full animate-bounce'></div>
-            <div className='dot w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-150'></div>
-            <div className='dot w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-300'></div>
-        </div>
-    );
-};
+import Loading from "./Loader";
 
 const NavbarWeb = () => {
     const navigate = useNavigate();
