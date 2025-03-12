@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import gsap from "gsap";
+import Loading from "./Loader"; // Import Loading animation
 import "react-toastify/dist/ReactToastify.css";
 
 const EmailPopup = ({ onClose }) => {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
   const popupRef = useRef(null);
 
   useEffect(() => {
@@ -21,6 +23,8 @@ const EmailPopup = ({ onClose }) => {
       return;
     }
 
+    setLoading(true); // Start loading animation
+
     try {
       const response = await fetch("http://localhost:5000/api/send-email", {
         method: "POST",
@@ -30,12 +34,17 @@ const EmailPopup = ({ onClose }) => {
 
       if (response.ok) {
         toast.success("Email sent successfully!");
-        setTimeout(onClose, 2000); // Close the popup after 2 seconds
+        setTimeout(() => {
+          setLoading(false);
+          onClose();
+        }, 2000);
       } else {
         toast.error("Failed to send email.");
+        setLoading(false);
       }
     } catch (error) {
       toast.error("Error sending email.");
+      setLoading(false);
     }
   };
 
@@ -54,13 +63,19 @@ const EmailPopup = ({ onClose }) => {
           className="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:border-[#229ea6] focus:ring-2 focus:ring-[#229ea6] transition"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          disabled={loading}
         />
-        <button
-          onClick={handleSendEmail}
-          className="w-full px-5 py-3 text-white bg-[#229ea6] rounded-lg font-semibold hover:bg-[#007b7f] transition transform hover:scale-105 shadow-lg"
-        >
-          Submit
-        </button>
+
+        {loading ? (
+          <Loading /> // Show Loading Animation while submitting
+        ) : (
+          <button
+            onClick={handleSendEmail}
+            className="w-full px-5 py-3 text-white bg-[#229ea6] rounded-lg font-semibold hover:bg-[#007b7f] transition transform hover:scale-105 shadow-lg"
+          >
+            Submit
+          </button>
+        )}
 
         <button
           onClick={onClose}
