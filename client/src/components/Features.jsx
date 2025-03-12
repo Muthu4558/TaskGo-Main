@@ -39,7 +39,8 @@ const Features = () => {
     { title: 'Profile Management', sections: [{ content: 'Users can modify personal information, change passwords, and customize settings.' }] },
     { title: 'Password Management', sections: [{ content: 'Ensure secure password storage with encryption and easy recovery options.' }] },
     { title: 'For Admin Dashboard', sections: [{ content: 'Track user activities, filter tasks, and oversee all projects effortlessly.' }] },
-    { title: 'For User Dashboard', sections: [{ content: 'Personalized task management and real-time updates on assigned tasks.' }] }
+    { title: 'For User Dashboard', sections: [{ content: 'Personalized task management and real-time updates on assigned tasks.' }] },
+    { title: 'Email Notification', sections: [{ content: 'An email notification should be sent when a user is created, activated, or disabled, as well as for actions such as login, task assignment, messaging within a task, and adding a new task to an existing one.' }] }
   ];
 
   return (
