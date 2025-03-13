@@ -45,7 +45,7 @@ const sendEmail = async (to) => {
     text: "Thank you for signing up for TaskGo! Get started now and boost your productivity.",
     html: `<p>Thank you for signing up for <b>TaskGo</b>! 🚀</p><p>Click <a href="https://taskgo.in">here</a> to get started.</p>
           <p>Demo Credntials: For Admin & User</p>
-          <p>Email:admin@gmail.com</p>
+          <p>Email:admin1@gmail.com</p>
           <p>Password:12345</p>
           <p>Email:user@gmail.com</p>
           <p>Password:12345</p>
