@@ -102,7 +102,7 @@ const AddUser = ({ open, setOpen, userData, isAdminOnly, onSubmit }) => {
             placeholder="Full name"
             type="text"
             name="name"
-            label="Full Name"
+            label="Name"
             register={register("name", { required: "Full name is required!" })}
             error={errors.name?.message}
           />
