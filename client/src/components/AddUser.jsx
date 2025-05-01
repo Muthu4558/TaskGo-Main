@@ -34,7 +34,9 @@ const AddUser = ({ open, setOpen, userData, isAdminOnly, onSubmit }) => {
       if (isAdminOnly) {
         await onSubmit(data);
       } else {
-        if (!user?.isAdmin) {
+        const isSelfUpdate = userData?._id === user._id;
+
+        if (!user?.isAdmin && !isSelfUpdate) {
           toast.error("Only admins can perform this action");
           return;
         }
@@ -47,11 +49,10 @@ const AddUser = ({ open, setOpen, userData, isAdminOnly, onSubmit }) => {
                 backgroundColor: "#4caf50",
                 color: "#fff",
                 fontSize: "16px",
-                padding: "10px"
+                padding: "10px",
               },
             });
-            if (userData?._id === user._id)
-              dispatch(setCredentials({ ...result.user }));
+            if (isSelfUpdate) dispatch(setCredentials({ ...result.user }));
           } else {
             const result = await addNewUser({
               ...data,
@@ -63,7 +64,7 @@ const AddUser = ({ open, setOpen, userData, isAdminOnly, onSubmit }) => {
                 backgroundColor: "#4caf50",
                 color: "#fff",
                 fontSize: "16px",
-                padding: "10px"
+                padding: "10px",
               },
             });
           }
@@ -79,7 +80,7 @@ const AddUser = ({ open, setOpen, userData, isAdminOnly, onSubmit }) => {
               backgroundColor: "#F44336",
               color: "#fff",
               fontSize: "16px",
-              padding: "10px"
+              padding: "10px",
             },
           });
         }
@@ -143,6 +144,7 @@ const AddUser = ({ open, setOpen, userData, isAdminOnly, onSubmit }) => {
                 <option value="">Select Department</option>
                 <option value="Chairman">Chairman</option>
                 <option value="IT">IT</option>
+                <option value="HR">Management</option>
                 <option value="BL">Business Lead</option>
                 <option value="Sales">Sales</option>
                 <option value="Marketing">Marketing</option>
@@ -176,7 +178,7 @@ const AddUser = ({ open, setOpen, userData, isAdminOnly, onSubmit }) => {
             error={errors.email?.message}
           />
 
-          {user?.isAdmin && (
+          {(user?.isAdmin) && (
             <div className="relative">
               <Textbox
                 placeholder="Password"
@@ -200,7 +202,7 @@ const AddUser = ({ open, setOpen, userData, isAdminOnly, onSubmit }) => {
           </div>
         ) : (
           <div className="py-3 mt-4 sm:flex sm:flex-row-reverse">
-            {(user?.isAdmin || user?.isSuperAdmin) && (
+            {(user?.isAdmin || userData?._id === user._id || user?.isSuperAdmin) && (
               <Button
                 type="submit"
                 className="bg-[#229ea6] px-8 text-sm font-semibold text-white sm:w-auto"
