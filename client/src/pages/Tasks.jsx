@@ -10,10 +10,7 @@ import BoardView from "../components/BoardView";
 import AddTask from "../components/task/AddTask";
 import { useGetAllTaskQuery } from "../redux/slices/api/taskApiSlice";
 
-const TABS = [
-  // { title: "Board View", icon: <MdGridView /> },
-  // { title: "List View", icon: <FaList /> },
-];
+const TABS = [];
 
 const TASK_TYPE = {
   todo: "bg-blue-600",
@@ -27,6 +24,8 @@ const Tasks = () => {
   const [selected, setSelected] = useState(0);
   const [open, setOpen] = useState(false);
   const [filterDate, setFilterDate] = useState("");
+  const [filterDueDate, setFilterDueDate] = useState("");
+  const [filterPriority, setFilterPriority] = useState("");
 
   const status = params?.status || "";
 
@@ -37,21 +36,35 @@ const Tasks = () => {
   });
 
   const processedTasks = data?.tasks.map((task) => {
-    const isOverdue = task.date && new Date(task.date) < new Date()
+    const isOverdue = task.date && new Date(task.date) < new Date();
     return {
       ...task,
       isOverdue,
-      dynamicClass: isOverdue && task.stage !== "completed" ? "bg-red-600" : TASK_TYPE[task.stage],
+      dynamicClass:
+        isOverdue && task.stage !== "completed"
+          ? "bg-red-600"
+          : TASK_TYPE[task.stage],
     };
   });
 
-  const filteredTasks = filterDate
-    ? processedTasks.filter((task) => {
-      const taskDate = new Date(task.createdAt).toDateString();
-      const selectedDate = new Date(filterDate).toDateString();
-      return taskDate === selectedDate;
-    })
-    : processedTasks;
+  const filteredTasks = processedTasks?.filter((task) => {
+    const matchCreatedDate = filterDate
+      ? new Date(task.createdAt).toDateString() ===
+        new Date(filterDate).toDateString()
+      : true;
+
+    const matchDueDate = filterDueDate
+      ? task.date &&
+        new Date(task.date).toDateString() ===
+          new Date(filterDueDate).toDateString()
+      : true;
+
+    const matchPriority = filterPriority
+      ? task.priority?.toLowerCase() === filterPriority.toLowerCase()
+      : true;
+
+    return matchCreatedDate && matchDueDate && matchPriority;
+  });
 
   return isLoading ? (
     <div className="py-10">
@@ -59,20 +72,55 @@ const Tasks = () => {
     </div>
   ) : (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
         <Title title={status ? `${status} Tasks` : "Tasks"} />
 
         <div className="flex items-center gap-4 flex-wrap">
           {!status && (
             <>
-              <input
-                type="date"
-                value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
-                className="border border-gray-300 rounded-lg px-4 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition-all duration-300 bg-white text-gray-800 text-lg"
-              />
+              {/* Created Date Filter */}
+              <div className="flex flex-col">
+                <label>Created Date:</label>
+                <input
+                  type="date"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-4 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition-all duration-300 bg-white text-gray-800 text-lg"
+                />
+              </div>
+
+              {/* Due Date Filter */}
+              <div className="flex flex-col">
+                <label>Due Date:</label>
+                <input
+                  type="date"
+                  value={filterDueDate}
+                  onChange={(e) => setFilterDueDate(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-4 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition-all duration-300 bg-white text-gray-800 text-lg"
+                />
+              </div>
+
+              {/* Priority Filter */}
+              <div className="flex flex-col">
+                <label>Priority:</label>
+                <select
+                  value={filterPriority}
+                  onChange={(e) => setFilterPriority(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-4 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition-all duration-300 bg-white text-gray-800 text-lg"
+                >
+                  <option value="">All</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+
               <button
-                onClick={() => setFilterDate("")}
+                onClick={() => {
+                  setFilterDate("");
+                  setFilterDueDate("");
+                  setFilterPriority("");
+                }}
                 className="px-4 py-2 bg-[#229ea6] text-white rounded-md"
               >
                 Clear
@@ -103,12 +151,12 @@ const Tasks = () => {
           </div>
         )}
         {Array.isArray(filteredTasks) && filteredTasks.length === 0 ? (
-       <div className="text-center text-gray-500 py-10 text-2xl font-bold">
-         No tasks available in {status || "this category"}.
-       </div>
-     ) : (
-       <BoardView tasks={filteredTasks} />
-     )}
+          <div className="text-center text-gray-500 py-10 text-2xl font-bold">
+            No tasks available in {status || "this category"}.
+          </div>
+        ) : (
+          <BoardView tasks={filteredTasks} />
+        )}
       </Tabs>
 
       <AddTask open={open} setOpen={setOpen} />

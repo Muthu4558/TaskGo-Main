@@ -14,6 +14,7 @@ const DailyReport = () => {
   const [error, setError] = useState("");
   const [editingReport, setEditingReport] = useState(null);
   const [dropdownVisible, setDropdownVisible] = useState(null);
+  const [filterDate, setFilterDate] = useState("");
 
   const { user } = useSelector((state) => state.auth);
 
@@ -155,7 +156,24 @@ const DailyReport = () => {
   return (
     <div className="p-4">
       <Toaster position="bottom-right" reverseOrder={false} />
-      <h1 className="text-2xl font-bold mb-4">Daily Task</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold mb-4">Daily Task</h1>
+
+        <div className="flex items-center gap-4 mb-4">
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6]"
+          />
+          <button
+            onClick={() => setFilterDate("")}
+            className="px-4 py-1 bg-[#229ea6] text-white rounded"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
 
       <div className="bg-white p-5">
         {error && <p className="text-red-500">{error}</p>}
@@ -167,7 +185,6 @@ const DailyReport = () => {
             className="border rounded w-full h-40 p-2 mb-4 bg-gray-100"
           />
           <div className="flex space-x-2">
-
             <button type="submit" className="bg-[#229ea6] text-white px-4 py-2 rounded">
               {editingReport ? "Update" : "Submit"}
             </button>
@@ -180,10 +197,9 @@ const DailyReport = () => {
                 Cancel
               </button>
             )}
-
-
           </div>
         </form>
+
         <div>
           <h2 className="text-lg font-semibold mb-2">All Reports:</h2>
           {reports.length > 0 ? (
@@ -201,75 +217,81 @@ const DailyReport = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {reports.map((report, index) => (
-                    <tr
-                      key={report._id || index}
-                      className={`hover:bg-gray-100 ${index % 2 === 0 ? "bg-gray-50" : "bg-white"}`}
-                    >
-                      <td className="border px-4 py-3 text-gray-700">{index + 1}</td>
-                      <td className="border px-4 py-3 text-gray-700 break-words">{report.content}</td>
-                      <td className="border px-4 py-3">No Attachment</td>
-                      <td className="border px-4 py-3 text-gray-700">
-                        {new Date(report.createdAt || report.dateTime).toLocaleString()}
-                      </td>
-                      <td className="border px-4 py-3 text-gray-700">
-                        <select
-                          className="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          value={report.status || "Todo"}
-                          onChange={(e) => handleStatusChange(report._id, e.target.value)}
-                        >
-                          <option value="Completed">Completed</option>
-                          <option value="In progress">In progress</option>
-                          <option value="Todo">Todo</option>
-                          <option value="Maintaining">Maintaining</option>
-                        </select>
-                      </td>
-
-                      <td className="border px-4 py-3 text-gray-700 relative">
-                        <div className="relative">
-                          <button
-                            onClick={() => toggleDropdown(report._id)}
-                            className="text-gray-700 hover:text-gray-900 focus:outline-none"
+                  {reports
+                    .filter((report) => {
+                      if (!filterDate) return true;
+                      const reportDate = new Date(report.createdAt || report.dateTime).toDateString();
+                      const selectedDate = new Date(filterDate).toDateString();
+                      return reportDate === selectedDate;
+                    })
+                    .map((report, index) => (
+                      <tr
+                        key={report._id || index}
+                        className={`hover:bg-gray-100 ${index % 2 === 0 ? "bg-gray-50" : "bg-white"}`}
+                      >
+                        <td className="border px-4 py-3 text-gray-700">{index + 1}</td>
+                        <td className="border px-4 py-3 text-gray-700 break-words">{report.content}</td>
+                        <td className="border px-4 py-3">No Attachment</td>
+                        <td className="border px-4 py-3 text-gray-700">
+                          {new Date(report.createdAt || report.dateTime).toLocaleString()}
+                        </td>
+                        <td className="border px-4 py-3 text-gray-700">
+                          <select
+                            className="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={report.status || "Todo"}
+                            onChange={(e) => handleStatusChange(report._id, e.target.value)}
                           >
-                            <BsThreeDotsVertical size={20} />
-                          </button>
-                          {dropdownVisible === report._id && (
-                            <div className="absolute right-0 mt-2 bg-white border shadow-lg rounded-md z-10">
-                              <label
-                                htmlFor="file-upload"
-                                className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
-                              >
-                                <BiUpload size={20} /> Upload
-                                <input
-                                  id="file-upload"
-                                  type="file"
-                                  // onChange={handleFileChange}
-                                  className="hidden"
-                                  accept="image/*,application/pdf"
-                                />
-                              </label>
-                              <button
-                                onClick={() => handleEdit(report)}
-                                className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
-                              >
-                                <BiEditAlt size={20} /> Edit
-                              </button>
-                              <button
-                                onClick={() => handleDelete(report._id)}
-                                className="flex gap-2 items-center px-4 py-2 text-sm text-red-700 hover:bg-gray-200"
-                              >
-                                <MdDelete size={20} /> Delete
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </td>
+                            <option value="Completed">Completed</option>
+                            <option value="In progress">In progress</option>
+                            <option value="Todo">Todo</option>
+                            <option value="Maintaining">Maintaining</option>
+                          </select>
+                        </td>
 
-                      <td className="border px-4 py-3 text-gray-700 break-words">
-                        {report.remark || "No remark yet"}
-                      </td>
-                    </tr>
-                  ))}
+                        <td className="border px-4 py-3 text-gray-700 relative">
+                          <div className="relative">
+                            <button
+                              onClick={() => toggleDropdown(report._id)}
+                              className="text-gray-700 hover:text-gray-900 focus:outline-none"
+                            >
+                              <BsThreeDotsVertical size={20} />
+                            </button>
+                            {dropdownVisible === report._id && (
+                              <div className="absolute right-0 mt-2 bg-white border shadow-lg rounded-md z-10">
+                                <label
+                                  htmlFor="file-upload"
+                                  className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
+                                >
+                                  <BiUpload size={20} /> Upload
+                                  <input
+                                    id="file-upload"
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*,application/pdf"
+                                  />
+                                </label>
+                                <button
+                                  onClick={() => handleEdit(report)}
+                                  className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
+                                >
+                                  <BiEditAlt size={20} /> Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(report._id)}
+                                  className="flex gap-2 items-center px-4 py-2 text-sm text-red-700 hover:bg-gray-200"
+                                >
+                                  <MdDelete size={20} /> Delete
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="border px-4 py-3 text-gray-700 break-words">
+                          {report.remark || "No remark yet"}
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
