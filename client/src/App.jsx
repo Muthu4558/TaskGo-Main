@@ -19,6 +19,7 @@ import DailyReport from './pages/DailyReport.jsx';
 import UserReports from './pages/UserReports.jsx';
 import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx';
 import HomePage from './pages/HomePage.jsx';
+import Project from './pages/Project.jsx';
 
 function Layout() {
   const { user } = useSelector((state) => state.auth);
@@ -111,6 +112,7 @@ const App = () => {
         {/* App Routes after login */}
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/project" element={<Project/>} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/completed/:status" element={<Tasks />} />
           <Route path="/in-progress/:status" element={<Tasks />} />

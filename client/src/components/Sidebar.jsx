@@ -6,7 +6,7 @@ import {
   MdOutlineAlarm,
   MdOutlineAssessment
 } from "react-icons/md";
-import { FaTasks, FaTrashAlt, FaUsers } from "react-icons/fa";
+import { FaProjectDiagram, FaTasks, FaTrashAlt, FaUsers } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
 import { setOpenSidebar } from "../redux/slices/authSlice";
@@ -15,6 +15,7 @@ import Logo2 from "../assets/images/logo2.png";
 
 const adminLinks = [
   { label: "Dashboard", link: "dashboard", icon: <MdDashboard /> },
+  // { label: "Project", link: "project", icon: <FaProjectDiagram /> },
   { label: "Tasks", link: "tasks", icon: <FaTasks /> },
   { label: "Completed", link: "completed/completed", icon: <MdTaskAlt /> },
   { label: "In Progress", link: "in-progress/in progress", icon: <MdOutlinePendingActions /> },

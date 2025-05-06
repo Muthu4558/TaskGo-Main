@@ -4,9 +4,8 @@ import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import { Toaster } from "react-hot-toast";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import { BiEditAlt } from "react-icons/bi";
+import { BiEditAlt, BiUpload } from "react-icons/bi";
 import { MdDelete } from "react-icons/md";
-import { BiUpload } from "react-icons/bi";
 
 const DailyReport = () => {
   const [content, setContent] = useState("");
@@ -15,6 +14,7 @@ const DailyReport = () => {
   const [editingReport, setEditingReport] = useState(null);
   const [dropdownVisible, setDropdownVisible] = useState(null);
   const [filterDate, setFilterDate] = useState("");
+  const [searchQuery, setSearchQuery] = useState(""); // ✅ New state for search
 
   const { user } = useSelector((state) => state.auth);
 
@@ -156,18 +156,28 @@ const DailyReport = () => {
   return (
     <div className="p-4">
       <Toaster position="bottom-right" reverseOrder={false} />
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-2xl font-bold mb-4">Daily Task</h1>
 
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4 mb-4 flex-wrap">
           <input
             type="date"
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
             className="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6]"
           />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search report..."
+            className="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6]"
+          />
           <button
-            onClick={() => setFilterDate("")}
+            onClick={() => {
+              setFilterDate("");
+              setSearchQuery("");
+            }}
             className="px-4 py-1 bg-[#229ea6] text-white rounded"
           >
             Clear
@@ -219,10 +229,13 @@ const DailyReport = () => {
                 <tbody>
                   {reports
                     .filter((report) => {
-                      if (!filterDate) return true;
                       const reportDate = new Date(report.createdAt || report.dateTime).toDateString();
                       const selectedDate = new Date(filterDate).toDateString();
-                      return reportDate === selectedDate;
+                      const matchesDate = !filterDate || reportDate === selectedDate;
+                      const matchesSearch = report.content
+                        .toLowerCase()
+                        .includes(searchQuery.toLowerCase());
+                      return matchesDate && matchesSearch;
                     })
                     .map((report, index) => (
                       <tr
@@ -247,7 +260,6 @@ const DailyReport = () => {
                             <option value="Maintaining">Maintaining</option>
                           </select>
                         </td>
-
                         <td className="border px-4 py-3 text-gray-700 relative">
                           <div className="relative">
                             <button
@@ -286,7 +298,6 @@ const DailyReport = () => {
                             )}
                           </div>
                         </td>
-
                         <td className="border px-4 py-3 text-gray-700 break-words">
                           {report.remark || "No remark yet"}
                         </td>
