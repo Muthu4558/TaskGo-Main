@@ -1,5 +1,5 @@
 import ProjectDetail from '../models/ProjectDetails.js';
-import User from '../models/User.js';
+import User from '../models/user.js'; 
 import nodemailer from 'nodemailer';
 
 // Email utility function
