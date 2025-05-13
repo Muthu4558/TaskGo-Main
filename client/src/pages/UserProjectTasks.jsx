@@ -15,7 +15,7 @@ const UserProjectTasks = () => {
     useEffect(() => {
         const fetchUserProjectDetails = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/project-details/user/${userId}`);
+                const response = await axios.get(`/api/project-details/user/${userId}`);
                 setDetails(response.data);
             } catch (error) {
                 console.error('Error fetching project details:', error);
