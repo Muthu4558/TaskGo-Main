@@ -191,6 +191,43 @@ const Users = () => {
     navigate(`/users/${selectedUserId}/tasks`);
   };
 
+  const handleViewProjectTasks = async (e, selectedUserId) => {
+    e.stopPropagation();
+  
+    if (!user?.isAdmin) {
+      toast.error("Only admins can view user project tasks.", {
+        style: {
+          backgroundColor: "#f44336",
+          color: "#fff",
+          fontSize: "16px",
+          padding: "10px",
+        },
+      });
+      return;
+    }
+  
+    // Fetch the project tasks
+    const response = await fetch(`/api/project-details/${selectedUserId}`); // Adjust your API route accordingly
+    const data = await response.json();
+  
+    if (data.message) {
+      // Handle case when no tasks are found
+      toast.error(data.message, {
+        style: {
+          backgroundColor: "#f44336",
+          color: "#fff",
+          fontSize: "16px",
+          padding: "10px",
+        },
+      });
+      return;
+    }
+  
+    // Proceed with displaying the tasks if they exist
+    navigate(`/users/${selectedUserId}/project-tasks`);
+    // console.log("User Data", data);
+  };
+
   const handleDetailsClick = (e, details) => {
     e.stopPropagation();
     setDetailsPopup({ open: true, details });
@@ -199,10 +236,11 @@ const Users = () => {
   const TableHeader = () => (
     <thead className="border-b border-gray-300">
       <tr className="text-black text-left">
-        <th className="py-2r">Full Name</th>
+        <th className="py-2">Full Name</th>
         <th className="py-2">Active</th>
         <th className="py-2">Detail</th>
         <th className="py-2">Daily Productivity</th>
+        <th className="py-2">Project Tasks</th>
         <th className="py-2 flex justify-end">Action</th>
       </tr>
     </thead>
@@ -256,6 +294,15 @@ const Users = () => {
             label="Daily Task"
             type="button"
             onClick={(e) => handleViewClicks(e, user._id)}
+          />
+        </td>
+
+        <td className="p-2">
+          <Button
+            className="text-black hover:text-blue-500 font-semibold sm:px-0"
+            label="Project Task"
+            type="button"
+            onClick={(e) => handleViewProjectTasks(e, user._id)}
           />
         </td>
 

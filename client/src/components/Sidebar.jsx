@@ -15,7 +15,7 @@ import Logo2 from "../assets/images/logo2.png";
 
 const adminLinks = [
   { label: "Dashboard", link: "dashboard", icon: <MdDashboard /> },
-  // { label: "Project", link: "project", icon: <FaProjectDiagram /> },
+  { label: "Project", link: "project", icon: <FaProjectDiagram /> },
   { label: "Tasks", link: "tasks", icon: <FaTasks /> },
   { label: "Completed", link: "completed/completed", icon: <MdTaskAlt /> },
   { label: "In Progress", link: "in-progress/in progress", icon: <MdOutlinePendingActions /> },
@@ -42,7 +42,7 @@ const Sidebar = () => {
   } else if (user?.isAdmin) {
     sidebarLinks = adminLinks;
   } else {
-    sidebarLinks = adminLinks.slice(0, 8);
+    sidebarLinks = adminLinks.slice(0, 9);
   }
 
   const closeSidebar = () => dispatch(setOpenSidebar(false));
@@ -64,7 +64,7 @@ const Sidebar = () => {
   return (
     <div className='w-full h-full flex flex-col gap-6 p-5'>
       <img className="w-67 mt-1" src={Logo2} alt="Nizcare-Logo" />
-      <div className='flex-1 flex flex-col gap-y-5 py-8'>
+      <div className='flex-1 flex flex-col gap-y-4 py-4'>
         {sidebarLinks.map((link) => (
           <NavLink el={link} key={link.label} />
         ))}

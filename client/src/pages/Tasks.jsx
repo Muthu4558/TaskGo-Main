@@ -26,6 +26,7 @@ const Tasks = () => {
   const [filterDate, setFilterDate] = useState("");
   const [filterDueDate, setFilterDueDate] = useState("");
   const [filterPriority, setFilterPriority] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const status = params?.status || "";
 
@@ -47,7 +48,11 @@ const Tasks = () => {
     };
   });
 
-  const filteredTasks = processedTasks?.filter((task) => {
+  const searchedTasks = processedTasks?.filter((task) =>
+    task.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredTasks = searchedTasks?.filter((task) => {
     const matchCreatedDate = filterDate
       ? new Date(task.createdAt).toDateString() ===
         new Date(filterDate).toDateString()
@@ -78,6 +83,17 @@ const Tasks = () => {
         <div className="flex items-center gap-4 flex-wrap">
           {!status && (
             <>
+              {/* Search by Title */}
+              <div className="flex flex-col">
+                <label>Search:</label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search task title..."
+                  className="border border-gray-300 rounded-lg px-4 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition-all duration-300 bg-white text-gray-800 text-lg"
+                />
+              </div>
               {/* Created Date Filter */}
               <div className="flex flex-col">
                 <label>Created Date:</label>
@@ -120,6 +136,7 @@ const Tasks = () => {
                   setFilterDate("");
                   setFilterDueDate("");
                   setFilterPriority("");
+                  setSearchQuery("");
                 }}
                 className="px-4 py-2 bg-[#229ea6] text-white rounded-md"
               >
