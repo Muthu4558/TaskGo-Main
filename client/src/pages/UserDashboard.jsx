@@ -42,6 +42,7 @@ const UserDashboard = () => {
                 { stage: newStatus },
                 {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                    withCredentials: true,
                 }
             );
 
