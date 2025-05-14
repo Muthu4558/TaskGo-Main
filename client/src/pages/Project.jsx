@@ -35,7 +35,7 @@ const Project = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await axios.get('https://dev.taskgo.in/api/projects', {
+      const res = await axios.get('https://taskgo-backend.onrender.com/api/projects', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setProjects(res.data);
