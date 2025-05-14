@@ -55,7 +55,7 @@ const Project = () => {
     try {
       const token = localStorage.getItem('token');
       if (isEditing) {
-        await axios.put(`/api/projects/${formData._id}`, formData, {
+        await axios.put(`${baseUrl}/api/projects/${formData._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.success('Project updated successfully', {
@@ -67,7 +67,7 @@ const Project = () => {
           }
         });
       } else {
-        await axios.post('/api/projects', formData, {
+        await axios.post(`${baseUrl}/api/projects`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.success('Project created successfully', {
@@ -107,7 +107,7 @@ const Project = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`/api/projects/${id}`, {
+      await axios.delete(`${baseUrl}/api/projects/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       toast.success('Project deleted successfully', {
@@ -148,7 +148,7 @@ const Project = () => {
         projectId: assignForm.projectId
       };
 
-      await axios.post('/api/project-details', payload, {
+      await axios.post(`${baseUrl}/api/project-details`, payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
