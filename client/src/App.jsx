@@ -23,6 +23,7 @@ import Project from './pages/Project.jsx';
 import ProjectDetails from './pages/ProjectDetails.jsx';
 import UserDashboard from './pages/UserDashboard';
 import UserProjectTasks from './pages/UserProjectTasks.jsx';
+import PagenotFound from './components/PagenotFound.jsx';
 
 function Layout() {
   const { user } = useSelector((state) => state.auth);
@@ -137,6 +138,9 @@ const App = () => {
 
         {/* Login Page */}
         <Route path="/log-in" element={<Login />} />
+
+        {/* Catch-all route for 404 */}
+        <Route path="*" element={<PagenotFound />} />
       </Routes>
 
       <Toaster richColors />
