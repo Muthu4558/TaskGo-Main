@@ -14,8 +14,8 @@ export const createProject = async (req, res) => {
       dueDate,
       priority,
       assets,
-      // createdBy: req.user.userId, // Removed this line
-      // tenantId: req.user.tenantId, // Removed this line
+      createdBy: req.user.userId, // ✅ This should work based on your middleware
+      tenantId: req.user.tenantId, // optional if using multitenancy
     });
 
     const saved = await newProject.save();
@@ -26,11 +26,9 @@ export const createProject = async (req, res) => {
   }
 };
 
-
 export const getUserProjects = async (req, res) => {
   try {
-    // const projects = await Project.find({ createdBy: req.user.userId }).sort({ createdAt: -1 });
-    const projects = await Project.find().sort({ createdAt: -1 });
+    const projects = await Project.find({ createdBy: req.user.userId }).sort({ createdAt: -1 });
     res.status(200).json(projects);
   } catch (error) {
     console.error('Error fetching user projects:', error);
@@ -40,12 +38,11 @@ export const getUserProjects = async (req, res) => {
 
 export const updateProject = async (req, res) => {
   try {
-    // const updated = await Project.findOneAndUpdate(
-    //   { _id: req.params.id, createdBy: req.user.userId },
-    //   req.body,
-    //   { new: true }
-    // );
-    const updated = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updated = await Project.findOneAndUpdate(
+      { _id: req.params.id, createdBy: req.user.userId },
+      req.body,
+      { new: true }
+    );
     if (!updated) return res.status(404).json({ message: 'Project not found' });
     res.status(200).json(updated);
   } catch (err) {
@@ -54,11 +51,12 @@ export const updateProject = async (req, res) => {
   }
 };
 
-
 export const deleteProject = async (req, res) => {
   try {
-    // const deleted = await Project.findOneAndDelete({ _id: req.params.id, createdBy: req.user.userId });
-    const deleted = await Project.findByIdAndDelete(req.params.id);
+    const deleted = await Project.findOneAndDelete({
+      _id: req.params.id,
+      createdBy: req.user.userId,
+    });
     if (!deleted) return res.status(404).json({ message: 'Project not found' });
     res.status(200).json({ message: 'Project deleted' });
   } catch (err) {
@@ -67,16 +65,20 @@ export const deleteProject = async (req, res) => {
   }
 };
 
-
 export const getProjectById = async (req, res) => {
   try {
-    // const project = await Project.findOne({ _id: req.params.id, createdBy: req.user.userId });
-    const project = await Project.findById(req.params.id);
-    if (!project) return res.status(404).json({ message: 'Project not found' });
+    const project = await Project.findOne({
+      _id: req.params.id,
+      createdBy: req.user.userId, // ensures only the creator can access it
+    });
+
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
     res.status(200).json(project);
   } catch (error) {
     console.error('Error fetching project by ID:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };
-

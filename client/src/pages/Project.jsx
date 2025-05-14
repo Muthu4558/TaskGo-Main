@@ -35,7 +35,7 @@ const Project = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/projects`, {
+      const res = await axios.get('/api/projects', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setProjects(res.data);
@@ -52,7 +52,7 @@ const Project = () => {
     try {
       const token = localStorage.getItem('token');
       if (isEditing) {
-        await axios.put(`${import.meta.env.VITE_APP_BASE_URL}/api/projects/${formData._id}`, formData, {
+        await axios.put(`/api/projects/${formData._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.success('Project updated successfully', {
@@ -64,7 +64,7 @@ const Project = () => {
           }
         });
       } else {
-        await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/projects`, formData, {
+        await axios.post('/api/projects', formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.success('Project created successfully', {
@@ -104,7 +104,7 @@ const Project = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${import.meta.env.VITE_APP_BASE_URL}/api/projects/${id}`, {
+      await axios.delete(`/api/projects/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       toast.success('Project deleted successfully', {
@@ -145,7 +145,7 @@ const Project = () => {
         projectId: assignForm.projectId
       };
 
-      await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/project-details`, payload, {
+      await axios.post('/api/project-details', payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
@@ -200,7 +200,7 @@ const Project = () => {
             onClick={() => navigate('/userproject')}
             className="bg-[#229ea6] text-white p-3 rounded-md text-lg font-semibold flex items-center gap-2"
           >
-            <BsEyeFill />  View Project Tasks
+            <BsEyeFill /> Assigned Tasks
           </button>
         </div>
       </div>
