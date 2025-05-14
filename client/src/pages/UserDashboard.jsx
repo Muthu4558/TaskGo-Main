@@ -15,8 +15,9 @@ const UserDashboard = () => {
     useEffect(() => {
         const fetchAssigned = async () => {
             try {
-                const res = await axios.get('/api/project-details/user/assigned/all', {
+                const res = await axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/project-details/user/assigned/all`, {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                    withCredentials: true,
                 });
                 setAssignedDetails(res.data);
             } catch (err) {
@@ -37,7 +38,7 @@ const UserDashboard = () => {
     const handleStatusChange = async (taskId) => {
         try {
             await axios.patch(
-                `/api/project-details/${taskId}/status`,
+                `${import.meta.env.VITE_APP_BASE_URL}/api/project-details/${taskId}/status`,
                 { stage: newStatus },
                 {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },

@@ -20,8 +20,9 @@ const ProjectDetails = () => {
 
     const fetchProjectDetails = async () => {
         try {
-            const res = await axios.get(`/api/project-details/${id}`, {
+            const res = await axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/project-details/${id}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                withCredentials: true,
             });
             setProjectDetails(res.data);
         } catch (err) {
@@ -32,8 +33,9 @@ const ProjectDetails = () => {
 
     const fetchProject = async () => {
         try {
-            const res = await axios.get(`/api/projects/${id}`, {
+            const res = await axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/projects/${id}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                withCredentials: true,
             });
             setProject(res.data);
         } catch (err) {
@@ -59,8 +61,9 @@ const ProjectDetails = () => {
 
     const handleDeleteTask = async (taskId) => {
         try {
-            await axios.delete(`/api/project-details/${taskId}`, {
+            await axios.delete(`${import.meta.env.VITE_APP_BASE_URL}/api/project-details/${taskId}`, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                withCredentials: true,
             });
             setProjectDetails(projectDetails.filter(task => task._id !== taskId));
             toast.success('Task deleted successfully', {
@@ -89,8 +92,9 @@ const ProjectDetails = () => {
 
     const handleEditSubmit = async () => {
         try {
-            const res = await axios.put(`/api/project-details/${editTask._id}`, editTask, {
+            const res = await axios.put(`${import.meta.env.VITE_APP_BASE_URL}/api/project-details/${editTask._id}`, editTask, {
                 headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                withCredentials: true,
             });
 
             const updatedTasks = projectDetails.map(task =>
