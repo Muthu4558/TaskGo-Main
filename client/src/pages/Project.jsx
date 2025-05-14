@@ -35,19 +35,16 @@ const Project = () => {
 
   const fetchProjects = async () => {
     try {
-      const baseUrl = import.meta.env.VITE_APP_BASE_URL;
-      const res = await axios.get(`${baseUrl}/api/projects`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
+      const res = await axios.get('/api/projects', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setProjects(res.data);
+      // toast.success('Projects loaded successfully');
     } catch (err) {
       console.error('Failed to fetch projects:', err);
       toast.error('Failed to load projects');
     }
   };
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,7 +52,7 @@ const Project = () => {
     try {
       const token = localStorage.getItem('token');
       if (isEditing) {
-        await axios.put(`${baseUrl}/api/projects/${formData._id}`, formData, {
+        await axios.put(`/api/projects/${formData._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.success('Project updated successfully', {
@@ -67,7 +64,7 @@ const Project = () => {
           }
         });
       } else {
-        await axios.post(`${baseUrl}/api/projects`, formData, {
+        await axios.post('/api/projects', formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
         toast.success('Project created successfully', {
@@ -107,7 +104,7 @@ const Project = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`${baseUrl}/api/projects/${id}`, {
+      await axios.delete(`/api/projects/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       toast.success('Project deleted successfully', {
@@ -148,7 +145,7 @@ const Project = () => {
         projectId: assignForm.projectId
       };
 
-      await axios.post(`${baseUrl}/api/project-details`, payload, {
+      await axios.post('/api/project-details', payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
 
