@@ -37,6 +37,7 @@ const Project = () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/projects`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        withCredentials: true,
       });
       setProjects(res.data);
       // toast.success('Projects loaded successfully');
