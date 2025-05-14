@@ -35,11 +35,10 @@ const Project = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await axios.get('https://taskgo-backend.onrender.com/api/projects', {
+      const res = await axios.get('/api/projects', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
       setProjects(res.data);
-      // toast.success('Projects loaded successfully');
     } catch (err) {
       console.error('Failed to fetch projects:', err);
       toast.error('Failed to load projects');
@@ -48,33 +47,19 @@ const Project = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);  // Start loading
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (isEditing) {
         await axios.put(`/api/projects/${formData._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        toast.success('Project updated successfully', {
-          style: {
-            backgroundColor: "#4caf50",
-            color: "#fff",
-            fontSize: "16px",
-            padding: "10px",
-          }
-        });
+        toast.success('Project updated successfully');
       } else {
         await axios.post('/api/projects', formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        toast.success('Project created successfully', {
-          style: {
-            backgroundColor: "#4caf50",
-            color: "#fff",
-            fontSize: "16px",
-            padding: "10px",
-          }
-        });
+        toast.success('Project created successfully');
       }
       setIsModalOpen(false);
       setIsEditing(false);
@@ -82,19 +67,11 @@ const Project = () => {
       fetchProjects();
     } catch (err) {
       console.error('Error submitting project:', err);
-      toast.error('Failed to submit project', {
-        style: {
-          backgroundColor: "#4caf50",
-          color: "#fff",
-          fontSize: "16px",
-          padding: "10px",
-        }
-      });
+      toast.error('Failed to submit project');
     } finally {
-      setLoading(false);  // Stop loading
+      setLoading(false);
     }
   };
-
 
   const handleEdit = (project) => {
     setFormData(project);
@@ -107,27 +84,11 @@ const Project = () => {
       await axios.delete(`/api/projects/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-      toast.success('Project deleted successfully', {
-        style: {
-          backgroundColor: "#4caf50",
-          color: "#fff",
-          fontSize: "16px",
-          padding: "10px",
-        }
-      }
-      );
+      toast.success('Project deleted successfully');
       fetchProjects();
     } catch (err) {
       console.error('Failed to delete project:', err);
-      toast.error('Failed to delete project', {
-        style: {
-          backgroundColor: "#4caf50",
-          color: "#fff",
-          fontSize: "16px",
-          padding: "10px",
-        }
-      }
-      );
+      toast.error('Failed to delete project');
     }
   };
 
@@ -137,44 +98,21 @@ const Project = () => {
 
   const handleAssignSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // Start loading
-
+    setLoading(true);
     try {
-      const payload = {
-        ...assignForm,
-        projectId: assignForm.projectId
-      };
-
-      await axios.post('/api/project-details', payload, {
+      await axios.post('/api/project-details', assignForm, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
-
-      toast.success('User assigned to project successfully', {
-        style: {
-          backgroundColor: "#4caf50",
-          color: "#fff",
-          fontSize: "16px",
-          padding: "10px",
-        }
-      });
-
+      toast.success('User assigned to project successfully');
       setIsAssignModalOpen(false);
       setAssignForm({ taskTitle: '', dueDate: '', priority: 'medium', stage: 'todo', team: [], projectId: '' });
     } catch (err) {
       console.error('Failed to assign task:', err);
-      toast.error('Failed to assign user to project', {
-        style: {
-          backgroundColor: "#4caf50",
-          color: "#fff",
-          fontSize: "16px",
-          padding: "10px",
-        }
-      });
+      toast.error('Failed to assign user to project');
     } finally {
-      setLoading(false); // End loading
+      setLoading(false);
     }
   };
-
 
   useEffect(() => {
     fetchProjects();
@@ -326,14 +264,13 @@ const Project = () => {
                 >
                   {loading ? 'Loading...' : 'Assign'}
                 </button>
-
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Display Projects */}
+      {/* Project Cards */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {projects.length === 0 ? (
           <div className="text-2xl font-bold col-span-3 text-center text-gray-500">
@@ -354,7 +291,7 @@ const Project = () => {
                   {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
                 </span></p>
               </div>
-              <div className="mt-4 flex justify-end gap-3 flex-wrap">
+              <div className="mt-4 flex justify-end gap-2 flex-wrap">
                 <button
                   onClick={() => handleEdit(project)}
                   className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 text-blue-600 hover:bg-blue-200 text-sm font-semibold"
@@ -375,12 +312,15 @@ const Project = () => {
                 </button>
                 <button
                   onClick={() => {
-                    setAssignForm({ ...assignForm, projectId: project._id });
+                    setAssignForm(prev => ({
+                      ...prev,
+                      projectId: project._id
+                    }));
                     setIsAssignModalOpen(true);
                   }}
                   className="flex items-center gap-1 px-2 py-1 rounded-md bg-purple-100 text-purple-600 hover:bg-purple-200 text-sm font-semibold"
                 >
-                  <MdAdd /> Add User
+                  <MdAdd /> Assign
                 </button>
               </div>
             </div>
