@@ -6,24 +6,22 @@ import {
   deleteProject,
   getProjectById,
 } from '../controllers/projectController.js';
-import { protectRoute } from '../middlewares/authmiddlewave.js';
 
 const router = express.Router();
 
 // Create project
-router.post('/', protectRoute, createProject);
+router.post('/', createProject);
 
-// Get all projects for logged-in user
-router.get('/', protectRoute, getUserProjects);
+// Get all projects
+router.get('/', getUserProjects);
 
 // Update project by ID
-router.put('/:id', protectRoute, updateProject);
+router.put('/:id', updateProject);
 
 // Delete project by ID
-router.delete('/:id', protectRoute, deleteProject);
+router.delete('/:id', deleteProject);
 
 // Get project by ID
-router.get('/:id', protectRoute, getProjectById);
-
+router.get('/:id', getProjectById);
 
 export default router;

@@ -35,16 +35,19 @@ const Project = () => {
 
   const fetchProjects = async () => {
     try {
-      const res = await axios.get('/api/projects', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      const baseUrl = import.meta.env.VITE_APP_BASE_URL;
+      const res = await axios.get(`${baseUrl}/api/projects`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
       setProjects(res.data);
-      // toast.success('Projects loaded successfully');
     } catch (err) {
       console.error('Failed to fetch projects:', err);
       toast.error('Failed to load projects');
     }
   };
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
