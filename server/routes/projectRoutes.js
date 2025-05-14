@@ -18,12 +18,9 @@ router.get('/', protectRoute, getUserProjects);
 
 // Update project by ID
 router.put('/:id', protectRoute, updateProject);
-
-// Delete project by ID
 router.delete('/:id', protectRoute, deleteProject);
-
-// Get project by ID
 router.get('/:id', protectRoute, getProjectById);
+
 
 
 export default router;
