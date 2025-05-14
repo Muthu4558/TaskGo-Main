@@ -55,6 +55,7 @@ const Project = () => {
       if (isEditing) {
         await axios.put(`${import.meta.env.VITE_APP_BASE_URL}/api/projects/${formData._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
         });
         toast.success('Project updated successfully', {
           style: {
@@ -67,6 +68,7 @@ const Project = () => {
       } else {
         await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/projects`, formData, {
           headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
         });
         toast.success('Project created successfully', {
           style: {
@@ -107,6 +109,7 @@ const Project = () => {
     try {
       await axios.delete(`${import.meta.env.VITE_APP_BASE_URL}/api/projects/${id}`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        withCredentials: true,
       });
       toast.success('Project deleted successfully', {
         style: {
@@ -148,6 +151,7 @@ const Project = () => {
 
       await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/project-details`, payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        withCredentials: true,
       });
 
       toast.success('User assigned to project successfully', {
