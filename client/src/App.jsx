@@ -24,6 +24,7 @@ import ProjectDetails from './pages/ProjectDetails.jsx';
 import UserDashboard from './pages/UserDashboard';
 import UserProjectTasks from './pages/UserProjectTasks.jsx';
 import PagenotFound from './components/PagenotFound.jsx';
+import IdeaBoard from './pages/IdeaBoard.jsx';
 
 function Layout() {
   const { user } = useSelector((state) => state.auth);
@@ -120,6 +121,7 @@ const App = () => {
           <Route path="/projects/:id" element={<ProjectDetails />} />
           <Route path="/userproject" element={<UserDashboard />} />
           <Route path="/users/:userId/project-tasks" element={<UserProjectTasks />} />
+          <Route path="/idea-board" element={<IdeaBoard />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/completed/:status" element={<Tasks />} />
           <Route path="/in-progress/:status" element={<Tasks />} />

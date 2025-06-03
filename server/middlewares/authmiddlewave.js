@@ -31,9 +31,6 @@ const protectRoute = async (req, res, next) => {
     };
 
     next();
-    console.log("Headers:", req.headers);
-console.log("Cookies:", req.cookies);
-console.log("Token:", req.cookies?.token || req.headers.authorization?.split(" ")[1]);
 
   } catch (error) {
     console.error("Authentication error:", error.message);

@@ -177,32 +177,48 @@ const ProjectDetails = () => {
             ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredTasks.map(task => (
-                        <li key={task._id} className="bg-white p-5 border rounded-xl shadow-md hover:shadow-lg transition">
-                            <h4 className="text-lg font-bold mb-1 text-gray-800">{task.taskTitle}</h4>
-                            <p className="text-sm text-gray-600 mb-1"><strong>Due:</strong> {new Date(task.dueDate).toLocaleDateString()}</p>
+                        <li
+                            key={task._id}
+                            className="bg-white p-5 border rounded-xl shadow-md hover:shadow-lg transition overflow-hidden"
+                        >
+                            <h4 className="text-lg font-bold mb-1 text-gray-800 break-words">{task.taskTitle}</h4>
+
+                            <p className="text-sm text-gray-600 mb-1">
+                                <strong>Due:</strong> {new Date(task.dueDate).toLocaleDateString()}
+                            </p>
+
                             <p className="text-sm mb-1">
                                 <strong>Priority:</strong>{' '}
-                                <span className={`text-xs px-2 py-0.5 rounded text-white ${task.priority === 'high' ? 'bg-red-500' :
-                                        task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                                    }`}>
+                                <span className={`text-xs px-2 py-0.5 rounded text-white inline-block ${task.priority === 'high' ? 'bg-red-500' :
+                                    task.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`}>
                                     {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                                 </span>
                             </p>
+
                             <p className="text-sm mb-1">
                                 <strong>Stage:</strong>{' '}
-                                <span className={`text-xs px-2 py-0.5 rounded-full text-white ${task.stage === 'todo' ? 'bg-blue-500' :
-                                        task.stage === 'inprogress' ? 'bg-yellow-500' :
-                                            task.stage === 'completed' ? 'bg-green-600' : 'bg-gray-400'
-                                    }`}>
+                                <span className={`text-xs px-2 py-0.5 rounded-full text-white inline-block ${task.stage === 'todo' ? 'bg-blue-500' :
+                                    task.stage === 'inprogress' ? 'bg-yellow-500' :
+                                        task.stage === 'completed' ? 'bg-green-600' : 'bg-gray-400'}`}>
                                     {task.stage.charAt(0).toUpperCase() + task.stage.slice(1)}
                                 </span>
                             </p>
-                            <p className="text-sm text-gray-700"><strong>Team:</strong> {task.team.map(user => user.name).join(', ')}</p>
-                            <div className="flex justify-end gap-2 mt-4">
-                                <button onClick={() => handleEditTask(task)} className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-800 text-white rounded-md">
+
+                            <p className="text-sm text-gray-700 break-words">
+                                <strong>Team:</strong> {task.team.map(user => user.name).join(', ')}
+                            </p>
+
+                            <div className="flex justify-end gap-2 mt-4 flex-wrap">
+                                <button
+                                    onClick={() => handleEditTask(task)}
+                                    className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-800 text-white rounded-md"
+                                >
                                     <FaEdit /> Edit
                                 </button>
-                                <button onClick={() => handleDeleteTask(task._id)} className="flex items-center gap-1 px-2 py-1 bg-red-600 hover:bg-red-800 text-white rounded-md">
+                                <button
+                                    onClick={() => handleDeleteTask(task._id)}
+                                    className="flex items-center gap-1 px-2 py-1 bg-red-600 hover:bg-red-800 text-white rounded-md"
+                                >
                                     <FaTrashAlt /> Delete
                                 </button>
                             </div>

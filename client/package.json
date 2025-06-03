@@ -33,8 +33,11 @@
     "react-toastify": "^10.0.6",
     "recharts": "^2.12.7",
     "reset": "^0.1.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "sonner": "^1.5.0",
     "swiper": "^11.2.5",
+    "twilio": "^5.7.0",
     "uuid": "^11.0.5",
     "xlsx": "^0.18.5"
   },
