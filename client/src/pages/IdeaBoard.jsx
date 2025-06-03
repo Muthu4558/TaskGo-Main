@@ -3,7 +3,7 @@ import axios from 'axios';
 import { MdDelete, MdEdit } from 'react-icons/md';
 
 axios.defaults.withCredentials = true;
-const API_URL = 'http://localhost:5000/api/idea-board';
+const API_URL = `${import.meta.env.VITE_APP_BASE_URL}/api/idea-board`;
 
 const IdeaBoard = () => {
   const [tasks, setTasks] = useState([]);
