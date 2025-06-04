@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { MdDelete, MdEdit } from 'react-icons/md';
+import { toast } from "sonner";
 
 axios.defaults.withCredentials = true;
 const API_URL = `${import.meta.env.VITE_APP_BASE_URL}/api/idea-board`;
@@ -56,6 +57,14 @@ const IdeaBoard = () => {
     try {
       if (editId) {
         await axios.put(`${API_URL}/${editId}`, form);
+        toast.success('Task updated successfully', {
+        style: {
+          backgroundColor: "#4caf50",
+          color: "#fff",
+          fontSize: "16px",
+          padding: "10px",
+        }
+      });
       } else {
         await axios.post(API_URL, form);
       }
@@ -77,6 +86,14 @@ const IdeaBoard = () => {
     try {
       await axios.delete(`${API_URL}/${id}`);
       fetchIdeas();
+      toast.success('Task deleted successfully', {
+        style: {
+          backgroundColor: "#4caf50",
+          color: "#fff",
+          fontSize: "16px",
+          padding: "10px",
+        }
+      });
     } catch (err) {
       console.error('Error deleting idea:', err.message);
     }
@@ -113,7 +130,7 @@ const IdeaBoard = () => {
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-xl font-semibold text-gray-800">{task.title}</h3>
               <span className="text-sm ">
-                <span className='block font-bold'>Due Date:</span> 
+                <span className='block font-bold'>Due Date:</span>
                 <span className='block text-gray-500'>{new Date(task.dueDate).toLocaleDateString()}</span>
               </span>
             </div>
