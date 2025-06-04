@@ -119,6 +119,7 @@ export const postTaskActivity = async (req, res) => {
       type,
       activity,
       by: userId,
+      date: new Date(),
     };
 
     // Push the activity to the task's activities array

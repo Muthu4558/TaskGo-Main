@@ -21,7 +21,7 @@ import Loading from "../components/Loader";
 import Button from "../components/Button";
 import { useGetSingleTaskQuery, usePostTaskActivityMutation } from "../redux/slices/api/taskApiSlice";
 import { useNavigate } from "react-router-dom";
-import { FaArrowLeft } from "react-icons/fa"; 
+import { FaArrowLeft } from "react-icons/fa";
 
 const ICONS = {
   high: <MdKeyboardDoubleArrowUp />,
@@ -300,7 +300,9 @@ const Activities = ({ activity, id, refetch }) => {
           <p className='font-semibold'>{item?.by?.name}</p>
           <div className='text-gray-500 space-y-2'>
             <span className='capitalize'>{item?.type}</span>
-            <span className='text-sm'>{moment(item?.date).fromNow()}</span>
+            <span className='text-sm'>
+              {moment(item?.date).format("MMMM Do YYYY, h:mm A")}
+            </span>
           </div>
           <div className='text-gray-700'>{item?.activity}</div>
         </div>
