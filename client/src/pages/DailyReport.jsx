@@ -14,7 +14,8 @@ const DailyReport = () => {
   const [editingReport, setEditingReport] = useState(null);
   const [dropdownVisible, setDropdownVisible] = useState(null);
   const [filterDate, setFilterDate] = useState("");
-  const [searchQuery, setSearchQuery] = useState(""); // ✅ New state for search
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState(""); // ✅ Status filter
 
   const { user } = useSelector((state) => state.auth);
 
@@ -39,25 +40,15 @@ const DailyReport = () => {
         try {
           const updatedReport = { content, remark: editingReport.remark };
           await axios.put(`${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/${editingReport._id}`, updatedReport);
-
           setReports((prevReports) =>
             prevReports.map((report) =>
               report._id === editingReport._id ? { ...report, content } : report
             )
           );
-
-          toast.success("Report successfully updated!", {
-            style: {
-              backgroundColor: "#4caf50",
-              color: "#fff",
-              fontSize: "16px",
-              padding: "10px",
-            },
-          });
+          toast.success("Report successfully updated!");
           setEditingReport(null);
           setContent("");
         } catch (error) {
-          console.error("Error updating report:", error.response?.data || error.message);
           setError("Error updating report.");
           toast.error("Failed to update report.");
         }
@@ -70,20 +61,11 @@ const DailyReport = () => {
             userId: user._id,
             remark: "",
           };
-
           await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports`, newReport);
           setContent("");
           fetchReports();
-          toast.success("Report submitted successfully!", {
-            style: {
-              backgroundColor: "#4caf50",
-              color: "#fff",
-              fontSize: "16px",
-              padding: "10px",
-            },
-          });
+          toast.success("Report submitted successfully!");
         } catch (error) {
-          console.error("Error submitting report:", error.response?.data || error.message);
           setError("Error submitting report.");
           toast.error("Failed to submit report.");
         }
@@ -109,16 +91,8 @@ const DailyReport = () => {
       setReports((prevReports) =>
         prevReports.map((report) => (report._id === id ? { ...report, status } : report))
       );
-      toast.success("Status updated successfully!", {
-        style: {
-          backgroundColor: "#4caf50",
-          color: "#fff",
-          fontSize: "16px",
-          padding: "10px",
-        },
-      });
+      toast.success("Status updated successfully!");
     } catch (error) {
-      console.error("Error updating status:", error.response?.data || error.message);
       setError("Error updating status.");
       toast.error("Failed to update status.");
     }
@@ -128,16 +102,8 @@ const DailyReport = () => {
     try {
       await axios.delete(`${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/${id}`);
       setReports((prevReports) => prevReports.filter((report) => report._id !== id));
-      toast.success("Report deleted successfully!", {
-        style: {
-          backgroundColor: "#f44336",
-          color: "#fff",
-          fontSize: "16px",
-          padding: "10px",
-        },
-      });
+      toast.success("Report deleted successfully!");
     } catch (error) {
-      console.error("Error deleting report:", error.response?.data || error.message);
       setError("Error deleting report.");
       toast.error("Failed to delete report.");
     }
@@ -156,27 +122,40 @@ const DailyReport = () => {
   return (
     <div className="p-4">
       <Toaster position="bottom-right" reverseOrder={false} />
+
       <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="text-2xl font-bold mb-4">Daily Task</h1>
 
-        <div className="flex items-center gap-4 mb-4 flex-wrap">
+        <div className="flex flex-wrap gap-4 items-center mb-4">
           <input
             type="date"
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
-            className="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6]"
+            className="border border-gray-300 rounded px-3 py-1 focus:ring-2 focus:ring-[#229ea6]"
           />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search report..."
-            className="border border-gray-300 rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6]"
+            className="border border-gray-300 rounded px-3 py-1 focus:ring-2 focus:ring-[#229ea6]"
           />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="border border-gray-300 rounded px-3 py-1 focus:ring-2 focus:ring-[#229ea6]"
+          >
+            <option value="">All Statuses</option>
+            <option value="Todo">Todo</option>
+            <option value="In progress">In progress</option>
+            <option value="Completed">Completed</option>
+            <option value="Maintaining">Maintaining</option>
+          </select>
           <button
             onClick={() => {
               setFilterDate("");
               setSearchQuery("");
+              setStatusFilter("");
             }}
             className="px-4 py-1 bg-[#229ea6] text-white rounded"
           >
@@ -185,8 +164,9 @@ const DailyReport = () => {
         </div>
       </div>
 
-      <div className="bg-white p-5">
+      <div className="bg-white p-5 rounded shadow">
         {error && <p className="text-red-500">{error}</p>}
+
         <form onSubmit={handleSubmit} className="mb-4">
           <textarea
             value={content}
@@ -217,13 +197,13 @@ const DailyReport = () => {
               <table className="min-w-full table-auto border-collapse text-sm bg-white">
                 <thead>
                   <tr className="bg-[#f3f4f6] text-black">
-                    <th className="border px-4 py-3 text-left text-base font-bold">S.no</th>
-                    <th className="border px-4 py-3 text-left text-base font-bold">Report</th>
-                    <th className="border px-4 py-3 text-left text-base font-bold">Attachment</th>
-                    <th className="border px-4 py-3 text-left text-base font-bold">Date & Time</th>
-                    <th className="border px-4 py-3 text-left text-base font-bold">Status</th>
-                    <th className="border px-4 py-3 text-left text-base font-bold">Action</th>
-                    <th className="border px-4 py-3 text-left text-base font-bold">Remark (From Admin)</th>
+                    <th className="border px-4 py-3">S.no</th>
+                    <th className="border px-4 py-3">Report</th>
+                    <th className="border px-4 py-3">Attachment</th>
+                    <th className="border px-4 py-3">Date & Time</th>
+                    <th className="border px-4 py-3">Status</th>
+                    <th className="border px-4 py-3">Action</th>
+                    <th className="border px-4 py-3">Remark (From Admin)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -235,22 +215,24 @@ const DailyReport = () => {
                       const matchesSearch = report.content
                         .toLowerCase()
                         .includes(searchQuery.toLowerCase());
-                      return matchesDate && matchesSearch;
+                      const matchesStatus =
+                        !statusFilter || report.status?.toLowerCase() === statusFilter.toLowerCase();
+                      return matchesDate && matchesSearch && matchesStatus;
                     })
                     .map((report, index) => (
                       <tr
                         key={report._id || index}
                         className={`hover:bg-gray-100 ${index % 2 === 0 ? "bg-gray-50" : "bg-white"}`}
                       >
-                        <td className="border px-4 py-3 text-gray-700">{index + 1}</td>
-                        <td className="border px-4 py-3 text-gray-700 break-words">{report.content}</td>
+                        <td className="border px-4 py-3">{index + 1}</td>
+                        <td className="border px-4 py-3 break-words">{report.content}</td>
                         <td className="border px-4 py-3">No Attachment</td>
-                        <td className="border px-4 py-3 text-gray-700">
+                        <td className="border px-4 py-3">
                           {new Date(report.createdAt || report.dateTime).toLocaleString()}
                         </td>
-                        <td className="border px-4 py-3 text-gray-700">
+                        <td className="border px-4 py-3">
                           <select
-                            className="border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="border rounded px-2 py-1"
                             value={report.status || "Todo"}
                             onChange={(e) => handleStatusChange(report._id, e.target.value)}
                           >
@@ -260,45 +242,43 @@ const DailyReport = () => {
                             <option value="Maintaining">Maintaining</option>
                           </select>
                         </td>
-                        <td className="border px-4 py-3 text-gray-700 relative">
-                          <div className="relative">
-                            <button
-                              onClick={() => toggleDropdown(report._id)}
-                              className="text-gray-700 hover:text-gray-900 focus:outline-none"
-                            >
-                              <BsThreeDotsVertical size={20} />
-                            </button>
-                            {dropdownVisible === report._id && (
-                              <div className="absolute right-0 mt-2 bg-white border shadow-lg rounded-md z-10">
-                                <label
-                                  htmlFor="file-upload"
-                                  className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
-                                >
-                                  <BiUpload size={20} /> Upload
-                                  <input
-                                    id="file-upload"
-                                    type="file"
-                                    className="hidden"
-                                    accept="image/*,application/pdf"
-                                  />
-                                </label>
-                                <button
-                                  onClick={() => handleEdit(report)}
-                                  className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
-                                >
-                                  <BiEditAlt size={20} /> Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(report._id)}
-                                  className="flex gap-2 items-center px-4 py-2 text-sm text-red-700 hover:bg-gray-200"
-                                >
-                                  <MdDelete size={20} /> Delete
-                                </button>
-                              </div>
-                            )}
-                          </div>
+                        <td className="border px-4 py-3 relative">
+                          <button
+                            onClick={() => toggleDropdown(report._id)}
+                            className="text-gray-700 hover:text-gray-900"
+                          >
+                            <BsThreeDotsVertical size={20} />
+                          </button>
+                          {dropdownVisible === report._id && (
+                            <div className="absolute right-0 mt-2 bg-white border shadow-lg rounded-md z-10">
+                              <label
+                                htmlFor="file-upload"
+                                className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 cursor-pointer"
+                              >
+                                <BiUpload size={20} /> Upload
+                                <input
+                                  id="file-upload"
+                                  type="file"
+                                  className="hidden"
+                                  accept="image/*,application/pdf"
+                                />
+                              </label>
+                              <button
+                                onClick={() => handleEdit(report)}
+                                className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
+                              >
+                                <BiEditAlt size={20} /> Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(report._id)}
+                                className="flex gap-2 items-center px-4 py-2 text-sm text-red-700 hover:bg-gray-200"
+                              >
+                                <MdDelete size={20} /> Delete
+                              </button>
+                            </div>
+                          )}
                         </td>
-                        <td className="border px-4 py-3 text-gray-700 break-words">
+                        <td className="border px-4 py-3 break-words">
                           {report.remark || "No remark yet"}
                         </td>
                       </tr>
