@@ -8,6 +8,7 @@ const API_URL = `${import.meta.env.VITE_APP_BASE_URL}/api/idea-board`;
 
 const IdeaBoard = () => {
   const [tasks, setTasks] = useState([]);
+  const [filteredTasks, setFilteredTasks] = useState([]);
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -18,10 +19,43 @@ const IdeaBoard = () => {
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editId, setEditId] = useState(null);
+  const [stageFilter, setStageFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewTask, setViewTask] = useState(null);
 
   useEffect(() => {
     fetchIdeas();
   }, []);
+
+  useEffect(() => {
+    let updated = [...tasks];
+
+    if (stageFilter !== 'All') {
+      updated = updated.filter(task => task.stage === stageFilter);
+    }
+
+    if (searchQuery.trim()) {
+      updated = updated.filter(task =>
+        task.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    setFilteredTasks(updated);
+  }, [tasks, stageFilter, searchQuery]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setViewTask(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
 
   const fetchIdeas = async () => {
     try {
@@ -57,14 +91,7 @@ const IdeaBoard = () => {
     try {
       if (editId) {
         await axios.put(`${API_URL}/${editId}`, form);
-        toast.success('Task updated successfully', {
-        style: {
-          backgroundColor: "#4caf50",
-          color: "#fff",
-          fontSize: "16px",
-          padding: "10px",
-        }
-      });
+        toast.success('Task updated successfully');
       } else {
         await axios.post(API_URL, form);
       }
@@ -86,14 +113,7 @@ const IdeaBoard = () => {
     try {
       await axios.delete(`${API_URL}/${id}`);
       fetchIdeas();
-      toast.success('Task deleted successfully', {
-        style: {
-          backgroundColor: "#4caf50",
-          color: "#fff",
-          fontSize: "16px",
-          padding: "10px",
-        }
-      });
+      toast.success('Task deleted successfully');
     } catch (err) {
       console.error('Error deleting idea:', err.message);
     }
@@ -110,33 +130,80 @@ const IdeaBoard = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
         <h1 className="text-4xl font-bold text-gray-800">Idea Board</h1>
-        <button
-          onClick={() => {
-            resetForm();
-            setIsModalOpen(true);
-          }}
-          className="bg-[#229ea6] text-white px-5 py-2 rounded-lg shadow hover:bg-[#51b0b7] transition"
-        >
-          + Add Task to Yourself
-        </button>
+
+        <div className="flex flex-wrap gap-4 items-end">
+          {/* Filter by Stage */}
+          <div className="flex flex-col">
+            <label className="mb-1">Filter by Stage:</label>
+            <select
+              value={stageFilter}
+              onChange={(e) => setStageFilter(e.target.value)}
+              className="border rounded px-3 py-2 min-w-[160px]"
+            >
+              <option value="All">All</option>
+              <option value="To Do">To Do</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+
+          {/* Search by Title */}
+          <div className="flex flex-col">
+            <label className="mb-1">Search by Title:</label>
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="border rounded px-3 py-2 min-w-[200px] focus:outline-none focus:ring-2 focus:ring-[#229ea6]"
+            />
+          </div>
+
+          {/* Clear Button */}
+          <div className="flex flex-col">
+            <label className="invisible mb-1">Clear</label>
+            <button
+              onClick={() => {
+                setStageFilter('All');
+                setSearchQuery('');
+              }}
+              className="bg-[#229ea6] text-white px-4 py-2 rounded-lg hover:bg-[#51b0b7] transition"
+            >
+              Clear
+            </button>
+          </div>
+
+          {/* Add Task Button */}
+          <div className="flex flex-col">
+            <label className="invisible mb-1">Add</label>
+            <button
+              onClick={() => {
+                resetForm();
+                setIsModalOpen(true);
+              }}
+              className="bg-[#229ea6] text-white px-5 py-2 rounded-lg shadow hover:bg-[#51b0b7] transition"
+            >
+              + Add Task
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Task Cards */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {tasks.map((task) => (
-          <div key={task._id} className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition border">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-xl font-semibold text-gray-800">{task.title}</h3>
-              <span className="text-sm ">
-                <span className='block font-bold'>Due Date:</span>
-                <span className='block text-gray-500'>{new Date(task.dueDate).toLocaleDateString()}</span>
+        {filteredTasks.map((task) => (
+          <div key={task._id} className="bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition border overflow-hidden break-words">
+            <div className="flex justify-between items-start mb-3">
+              <h3 className="text-xl font-semibold text-gray-800 truncate max-w-[60%]">{task.title}</h3>
+              <span className="text-sm text-right">
+                <span className="block font-bold">Due:</span>
+                <span className="block text-gray-500">{new Date(task.dueDate).toLocaleDateString()}</span>
               </span>
             </div>
-            <p className="mb-3">
-              <span className='block font-bold'>Description:</span>
-              <span className='block text-gray-600'>{task.description}</span>
+            <p className="mb-3 line-clamp-3">
+              <span className="block font-bold">Description:</span>
+              <span className="block text-gray-600">{task.description}</span>
             </p>
             <div className="flex flex-wrap gap-2 text-sm mb-3">
               <select
@@ -150,16 +217,16 @@ const IdeaBoard = () => {
                     console.error('Error updating stage:', err.message);
                   }
                 }}
-                className="rounded border bg-gray-100 px-2 py-1"
+                className="rounded border bg-gray-100 px-2 py-1 min-w-0"
               >
                 <option value="To Do">To Do</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Completed">Completed</option>
               </select>
-              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium">#{task.tag}</span>
+              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium break-words max-w-full">#{task.tag}</span>
               <span className={priorityBadge(task.priority)}>{task.priority}</span>
             </div>
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-end gap-2 flex-wrap">
               <button onClick={() => handleEdit(task)}
                 className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 text-blue-600 hover:bg-blue-200 text-sm font-semibold"
               >
@@ -171,85 +238,65 @@ const IdeaBoard = () => {
               >
                 <MdDelete /> Delete
               </button>
+              <button
+                onClick={() => setViewTask(task)}
+                className="flex items-center gap-1 px-2 py-1 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm font-semibold"
+              >
+                Open
+              </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-xl shadow-lg">
-            <h2 className="text-2xl font-semibold mb-5">{editId ? 'Edit Task' : 'Add New Task'}</h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                name="title"
-                placeholder="Title"
-                value={form.title}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg focus:outline-none focus:ring"
-              />
-              <textarea
-                name="description"
-                placeholder="Description"
-                value={form.description}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg focus:outline-none focus:ring"
-              />
-              <input
-                type="date"
-                name="dueDate"
-                value={form.dueDate}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg"
-              />
-              <select
-                name="stage"
-                value={form.stage}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg"
-              >
-                <option>To Do</option>
-                <option>In Progress</option>
-                <option>Completed</option>
-              </select>
-              <input
-                type="text"
-                name="tag"
-                placeholder="Tag (e.g., Design)"
-                value={form.tag}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg"
-              />
-              <select
-                name="priority"
-                value={form.priority}
-                onChange={handleChange}
-                className="w-full p-3 border rounded-lg"
-              >
-                <option>High</option>
-                <option>Medium</option>
-                <option>Low</option>
-              </select>
-              <div className="flex justify-end gap-3 pt-4">
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  className="bg-[#229ea6] text-white px-5 py-2 rounded-lg hover:bg-[#51b0b7]"
-                >
-                  {editId ? 'Update' : 'Add'}
-                </button>
-              </div>
+      {/* Compact View Modal */}
+      {viewTask && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setViewTask(null)} // Click outside to close
+        >
+          <div
+            className="relative bg-white rounded-lg p-5 w-[90%] max-w-sm shadow-lg max-h-[50vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setViewTask(null)}
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-3xl font-bold"
+            >
+              &times;
+            </button>
+
+            <h2 className="text-xl font-bold mb-4 text-gray-800">View Task</h2>
+
+            <div className="mb-3">
+              <h3 className="text-sm font-semibold text-gray-600">Title</h3>
+              <p className="text-gray-800 break-words">{viewTask.title}</p>
+            </div>
+
+            <div className="mb-3">
+              <h3 className="text-sm font-semibold text-gray-600">Description</h3>
+              <p className="text-gray-800 whitespace-pre-wrap break-words">{viewTask.description}</p>
+            </div>
+
+            <div className="mb-3">
+              <h3 className="text-sm font-semibold text-gray-600">Due Date</h3>
+              <p className="text-gray-800">{new Date(viewTask.dueDate).toLocaleDateString()}</p>
+            </div>
+
+            <div className="mb-3">
+              <h3 className="text-sm font-semibold text-gray-600">Stage</h3>
+              <p className="text-gray-800">{viewTask.stage}</p>
+            </div>
+
+            <div className="mb-1">
+              <h3 className="text-sm font-semibold text-gray-600">Priority</h3>
+              <p className="text-gray-800">{viewTask.priority}</p>
             </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };
