@@ -47,6 +47,7 @@ const IdeaBoard = () => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         setViewTask(null);
+        setIsModalOpen(false);
       }
     };
 
@@ -55,7 +56,6 @@ const IdeaBoard = () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
-
 
   const fetchIdeas = async () => {
     try {
@@ -94,6 +94,7 @@ const IdeaBoard = () => {
         toast.success('Task updated successfully');
       } else {
         await axios.post(API_URL, form);
+        toast.success('Task added successfully');
       }
       fetchIdeas();
       resetForm();
@@ -249,7 +250,7 @@ const IdeaBoard = () => {
         ))}
       </div>
 
-      {/* Compact View Modal */}
+      {/* View Task Modal */}
       {viewTask && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -297,6 +298,95 @@ const IdeaBoard = () => {
         </div>
       )}
 
+      {/* Add/Edit Task Modal */}
+      {isModalOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setIsModalOpen(false)} // Click outside to close
+        >
+          <div
+            className="relative bg-white rounded-lg p-6 w-[90%] max-w-md shadow-lg max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()} // Prevent close on inner click
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-2 right-3 text-gray-500 hover:text-gray-800 text-2xl font-bold"
+            >
+              &times;
+            </button>
+
+            <h2 className="text-xl font-bold mb-4 text-gray-800">{editId ? 'Edit Task' : 'Add Task'}</h2>
+
+            {/* Form Inputs */}
+            <div className="flex flex-col gap-3">
+              <input
+                type="text"
+                name="title"
+                placeholder="Title"
+                value={form.title}
+                onChange={handleChange}
+                className="border rounded px-3 py-2 focus:outline-none"
+              />
+
+              <textarea
+                name="description"
+                placeholder="Description"
+                value={form.description}
+                onChange={handleChange}
+                className="border rounded px-3 py-2 h-24 resize-none focus:outline-none"
+              />
+
+              <input
+                type="date"
+                name="dueDate"
+                value={form.dueDate}
+                onChange={handleChange}
+                className="border rounded px-3 py-2 focus:outline-none"
+              />
+
+              <select
+                name="stage"
+                value={form.stage}
+                onChange={handleChange}
+                className="border rounded px-3 py-2 focus:outline-none"
+              >
+                <option value="To Do">To Do</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+              </select>
+
+              <input
+                type="text"
+                name="tag"
+                placeholder="Tag"
+                value={form.tag}
+                onChange={handleChange}
+                className="border rounded px-3 py-2 focus:outline-none"
+              />
+
+              <select
+                name="priority"
+                value={form.priority}
+                onChange={handleChange}
+                className="border rounded px-3 py-2 focus:outline-none"
+              >
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+              </select>
+
+              {/* Submit Button */}
+              <button
+                onClick={handleSubmit}
+                className="bg-[#229ea6] text-white px-5 py-2 rounded-lg hover:bg-[#51b0b7] transition"
+              >
+                {editId ? 'Update Task' : 'Add Task'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
