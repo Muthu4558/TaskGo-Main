@@ -38,6 +38,11 @@ export const registerUser = async (req, res) => {
       return res.status(400).json({ status: false, message: "User already exists" });
     }
 
+    const phoneExist = await User.findOne({ phone });
+    if (phoneExist) {
+      return res.status(400).json({ status: false, message: "Phone number is already used by another user." });
+    }
+
     // Ensure req.user exists (auth middleware should set this)
     if (!req.user) {
       return res.status(401).json({ status: false, message: "Unauthorized request" });
