@@ -107,6 +107,22 @@ const AddUser = ({ open, setOpen, userData, isAdminOnly, onSubmit }) => {
             error={errors.name?.message}
           />
 
+          <Textbox
+            className="w-full"
+            placeholder="Phone Number"
+            type="tel"
+            name="phone"
+            label="Phone Number"
+            register={register("phone", {
+              required: "Phone number is required!",
+              pattern: {
+                value: /^[0-9]{10}$/,
+                message: "Enter a valid 10-digit phone number",
+              },
+            })}
+            error={errors.phone?.message}
+          />
+
           {isAdminOnly && (
             <Textbox
               className="w-full"

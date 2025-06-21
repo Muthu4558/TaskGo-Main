@@ -27,6 +27,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.7.0",
     "morgan": "^1.10.0",
+    "node-fetch": "^3.3.2",
     "nodemailer": "^6.10.1",
     "razorpay": "^2.9.6",
     "react-redux": "^9.1.2",

@@ -30,7 +30,7 @@ const sendEmail = async (to, subject, text, htmlContent) => {
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, companyName, email, password, isAdmin, role, title, userLimit } = req.body; // Added userLimit here
+    const { name, companyName, email, password, isAdmin, role, title, userLimit, phone  } = req.body; // Added userLimit here
 
     // Check if user with this email already exists
     const userExist = await User.findOne({ email });
@@ -75,6 +75,7 @@ export const registerUser = async (req, res) => {
       role,
       title,
       tenantId,
+      phone,
     };
 
     // Store userLimit only if the user is an admin
@@ -264,7 +265,7 @@ export const getTeamList = async (req, res) => {
     }
 
     const users = await User.find(query).select(
-      "name title role email isActive tenantId"
+      "name title role email phone isActive tenantId"
     );
 
     return res.status(200).json(users);
@@ -293,6 +294,7 @@ export const updateUserProfile = async (req, res) => {
       user.title = req.body.title || user.title;
       user.role = req.body.role || user.role;
       user.email = req.body.email || user.email;
+      user.phone = req.body.phone || user.phone;
       user.password = req.body.password || user.password;
       user.userLimit = req.body.userLimit || user.userLimit;
       user.companyName = req.body.companyName || user.companyName;

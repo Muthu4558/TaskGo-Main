@@ -431,6 +431,7 @@ const Users = () => {
               <p><strong>Department:</strong> {detailsPopup.details?.title || "N/A"}</p>
               <p><strong>Role:</strong> {detailsPopup.details?.role || "N/A"}</p>
               <p><strong>Email:</strong> {detailsPopup.details?.email || "N/A"}</p>
+              <p><strong>Phone Number:</strong> {detailsPopup.details?.phone || "N/A"}</p>
             </div>
             <Button
               label="Close"
