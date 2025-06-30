@@ -1,16 +1,67 @@
-import User from "../models/user.js"
+import User from "../models/user.js";
 import Task from "../models/task.js";
 import { createJWT } from "../config/db.js";
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+dotenv.config();
 
-// Function to send email using nodemailer
+const QIKCHAT_API_KEY = process.env.QIKCHAT_API_KEY;
+const QIKCHAT_API_URL = process.env.QIKCHAT_API_URL;
+
+const sendWhatsAppTemplate = async (phone, templateName, parameters) => {
+  const payload = {
+    to_contact: `+91${phone}`,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: 'en',
+      components: [
+        {
+          type: 'body',
+          parameters: parameters.map(param => ({
+            type: 'text',
+            text: param,
+          })),
+        },
+      ],
+    },
+  };
+
+  try {
+    const response = await fetch(QIKCHAT_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'QIKCHAT-API-KEY': QIKCHAT_API_KEY,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || result.status === false) {
+      console.error('❌ WhatsApp send failed:', result);
+    } else {
+      console.log('✅ WhatsApp message sent:', result);
+    }
+  } catch (error) {
+    console.error('🔥 WhatsApp error:', error.message);
+  }
+};
+
+
 const sendEmail = async (to, subject, text, htmlContent) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false,
     },
   });
 
@@ -22,87 +73,67 @@ const sendEmail = async (to, subject, text, htmlContent) => {
       text,
       html: htmlContent,
     });
-    console.log(`Email sent successfully to: ${to}`);
+    console.log(`📧 Email sent to: ${to}`);
   } catch (error) {
-    console.error(`Failed to send email to ${to}:`, error);
+    console.error(`❌ Email failed to ${to}:`, error);
   }
 };
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, companyName, email, password, isAdmin, role, title, userLimit, phone  } = req.body; // Added userLimit here
+    const { name, companyName, email, password, isAdmin, role, title, userLimit, phone } = req.body;
 
-    // Check if user with this email already exists
     const userExist = await User.findOne({ email });
-    if (userExist) {
-      return res.status(400).json({ status: false, message: "User already exists" });
-    }
+    if (userExist) return res.status(400).json({ status: false, message: "User already exists" });
 
     const phoneExist = await User.findOne({ phone });
-    if (phoneExist) {
-      return res.status(400).json({ status: false, message: "Phone number is already used by another user." });
-    }
+    if (phoneExist) return res.status(400).json({ status: false, message: "Phone number is already used by another user." });
 
-    // Ensure req.user exists (auth middleware should set this)
-    if (!req.user) {
-      return res.status(401).json({ status: false, message: "Unauthorized request" });
-    }
+    if (!req.user) return res.status(401).json({ status: false, message: "Unauthorized request" });
 
-    let tenantId = req.user.tenantId; // Inherit tenantId by default
+    let tenantId = req.user.tenantId;
 
-    // Super Admin creating an Admin (new tenant ID & user limit applied)
     if (req.user.isSuperAdmin && isAdmin) {
-      tenantId = uuidv4(); // Generate new tenant ID
+      tenantId = uuidv4();
     }
 
-    // If admin is creating a user, check the limit
     if (req.user.isAdmin && !req.user.isSuperAdmin && !isAdmin) {
       const adminUser = await User.findById(req.user.userId);
-      if (!adminUser) {
-        return res.status(400).json({ status: false, message: "Admin user not found." });
-      }
+      if (!adminUser) return res.status(400).json({ status: false, message: "Admin user not found." });
 
       const currentUserCount = await User.countDocuments({ tenantId: adminUser.tenantId, isAdmin: false });
-
       if (currentUserCount >= adminUser.userLimit) {
         return res.status(400).json({ status: false, message: "User creation limit reached for this admin." });
       }
     }
 
-    // Create new user
     const newUserData = {
       name,
       email,
       password,
       companyName,
       isAdmin: !!isAdmin,
-      isSuperAdmin: false, // SuperAdmin is manually assigned
+      isSuperAdmin: false,
       role,
       title,
       tenantId,
       phone,
     };
 
-    // Store userLimit only if the user is an admin
     if (isAdmin) {
       newUserData.userLimit = userLimit;
     }
 
     const user = await User.create(newUserData);
+    if (!user) return res.status(400).json({ status: false, message: "Invalid user data" });
 
-    if (!user) {
-      return res.status(400).json({ status: false, message: "Invalid user data" });
-    }
-
-    // Send welcome email
     const emailContent = `
       <h3>Welcome ${name},</h3>
       <p>Your Nizcare Task Management account has been successfully created.</p>
       <p><strong>Login Credentials:</strong></p>
       <p>Email: <strong>${email}</strong></p>
       <p>Password: <strong>${password}</strong></p>
-      <p>You can now login using your credentials.</p>
-      <p>https://taskgo.in/</p>
+      <p><a href="https://taskgo.in/">Login here</a></p>
     `;
 
     await sendEmail(
@@ -112,9 +143,15 @@ export const registerUser = async (req, res) => {
       emailContent
     );
 
+    await sendWhatsAppTemplate(
+      phone,
+      'taskgo_test5',
+      [name, email, password, 'https://taskgo.in/']
+    );
+
     return res.status(201).json({ status: true, message: "User created successfully", user });
   } catch (error) {
-    console.error("Error in registerUser:", error);
+    console.error("❌ Error in registerUser:", error);
     return res.status(500).json({ status: false, message: error.message });
   }
 };
@@ -124,45 +161,31 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-
-    if (!user) {
-      console.log("❌ User not found in DB");
-      return res.status(401).json({ status: false, message: "Invalid email or password." });
-    }
-
-    console.log("✅ User found:", user.email);
-
-    if (!user.isActive) {
-      return res.status(401).json({
-        status: false,
-        message: "User account has been deactivated, contact the administrator",
-      });
-    }
-
-    console.log("🔑 Entered Password:", password);
-    console.log("🔒 Stored Hashed Password:", user.password);
+    if (!user) return res.status(401).json({ status: false, message: "Invalid email or password." });
+    if (!user.isActive) return res.status(401).json({ status: false, message: "User account has been deactivated, contact admin" });
 
     const isMatch = await user.matchPassword(password);
-    console.log("🛠️ Password Match:", isMatch);
+    if (!isMatch) return res.status(401).json({ status: false, message: "Invalid email or password" });
 
-    if (isMatch) {
-      createJWT(res, user._id);
-      user.password = undefined;
+    createJWT(res, user._id);
+    user.password = undefined;
 
-      // Send login email
-      const emailContent = `
-        <h3>Hello ${user.name},</h3>
-        <p>You have successfully logged into Nizcare Task Management.</p>
-        <p>If this was not you, please reset your password immediately.</p>
-      `;
+    const emailContent = `
+      <h3>Hello ${user.name},</h3>
+      <p>You have successfully logged into Nizcare Task Management.</p>
+      <p>If this was not you, please reset your password immediately.</p>
+    `;
 
-      await sendEmail(user.email, "Login Notification", "Successful Login", emailContent);
+    await sendEmail(user.email, "Login Notification", "Successful Login", emailContent);
 
-      return res.status(200).json(user);
-    } else {
-      console.log("❌ Password does not match");
-      return res.status(401).json({ status: false, message: "Invalid email or password" });
-    }
+    // ✅ Optional: Only send login WhatsApp if template exists with only 1 parameter
+    // await sendWhatsAppTemplate(
+    //   user.phone,
+    //   'user_login_notification',
+    //   [user.name]
+    // );
+
+    return res.status(200).json(user);
   } catch (error) {
     console.log("🔥 Error in loginUser:", error);
     return res.status(400).json({ status: false, message: error.message });

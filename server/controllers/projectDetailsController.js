@@ -1,6 +1,48 @@
 import ProjectDetail from '../models/ProjectDetails.js';
-import User from '../models/user.js'; 
+import User from '../models/user.js';
 import nodemailer from 'nodemailer';
+
+const QIKCHAT_API_KEY = process.env.QIKCHAT_API_KEY;
+const QIKCHAT_API_URL = process.env.QIKCHAT_API_URL;
+
+// Helper: send WhatsApp template via QikChat
+const sendWhatsAppTemplate = async (phone, templateName, parameters) => {
+  const payload = {
+    to_contact: `+91${phone}`,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: 'en',
+      components: [
+        {
+          type: 'body',
+          parameters: parameters.map(param => ({ type: 'text', text: param })),
+        },
+      ],
+    },
+  };
+
+  try {
+    const response = await fetch(QIKCHAT_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'QIKCHAT-API-KEY': QIKCHAT_API_KEY,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+    if (!response.ok || result.status === false) {
+      console.error('❌ WhatsApp send failed:', result);
+    } else {
+      console.log('✅ WhatsApp message sent:', result);
+    }
+  } catch (error) {
+    console.error('🔥 WhatsApp error:', error.message);
+  }
+};
 
 // Email utility function
 const sendEmail = async (to, subject, text, htmlContent) => {
@@ -40,27 +82,41 @@ export const createProjectDetail = async (req, res) => {
       team
     });
 
-    // Step 2: Get team members' email addresses
-    const users = await User.find({ _id: { $in: team } }, 'email name');
+    // Step 2: Get team members' email and phone numbers
+    const users = await User.find({ _id: { $in: team } }, 'email name phone');
+
     const teamEmails = users.map(user => user.email);
 
-    // Step 3: Send notification email to each member
-    // Step 3: Send notification email to each member
+    // Step 3: Send email & WhatsApp to each team member
     if (users.length === 0) {
-      console.warn('⚠️ No users found in the team array to send email');
+      console.warn('⚠️ No users found in the team array to send notifications');
     } else {
       for (const user of users) {
+        // --- Send Email ---
         await sendEmail(
           user.email,
           '📝 New Task Assigned in TaskGo',
           `Hi ${user.name},\n\nYou have been assigned a new task: "${taskTitle}" due on ${new Date(dueDate).toLocaleDateString()}.`,
           `<p>Hi <strong>${user.name}</strong>,</p>
-       <p>You have been assigned a new task: <strong>${taskTitle}</strong>.</p>
-       <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString()}</p>
-       <p><strong>Priority:</strong> ${priority}</p>
-       <p><strong>Stage:</strong> ${stage}</p>
-       <p>Please login to <a href="https://taskgo.in">TaskGo</a> to view your task.</p>`
+           <p>You have been assigned a new task: <strong>${taskTitle}</strong>.</p>
+           <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString()}</p>
+           <p><strong>Priority:</strong> ${priority}</p>
+           <p><strong>Stage:</strong> ${stage}</p>
+           <p>Please login to <a href="https://taskgo.in">TaskGo</a> to view your task.</p>`
         );
+
+        // --- Send WhatsApp (Template: taskgo_12) ---
+        if (user.phone) {
+          await sendWhatsAppTemplate(user.phone, 'taskgo_12', [
+            user.name,
+            taskTitle,
+            new Date(dueDate).toLocaleDateString(),
+            priority,
+            stage
+          ]);
+        } else {
+          console.warn(`⚠️ No phone number found for user ${user.name}`);
+        }
       }
     }
 

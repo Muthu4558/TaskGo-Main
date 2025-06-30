@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ModalWrapper from "../ModalWrapper";
-import { Dialog } from "@headlessui/react";
+import { Dialog, Textarea } from "@headlessui/react";
 import Textbox from "../Textbox";
 import { useForm } from "react-hook-form";
 import UserList from "./UserList";
@@ -152,6 +152,18 @@ const AddTask = ({ open, setOpen, task }) => {
               register={register("title", { required: "Title is required" })}
               error={errors.title ? errors.title.message : ""}
             />
+
+            <label className="w-full flex flex-col gap-1">
+              Task Description
+            </label>
+            <textarea
+              {...register("description", { required: "Description is required" })}
+              placeholder="Task Description"
+              className="w-full rounded bg-transparent px-3 py-2.5 2xl:py-3 border border-gray-300 placeholder-gray-400 text-gray-900 outline-none text-base focus:ring-2 ring-blue-300"
+            />
+            {errors.description && (
+              <p className="text-sm text-red-500">{errors.description.message}</p>
+            )}
 
             <UserList setTeam={setTeam} team={team} /> {/* UserList to select team members */}
 

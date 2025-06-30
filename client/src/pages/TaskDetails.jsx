@@ -147,6 +147,11 @@ const TaskDetails = () => {
                   Created At: {new Date(task?.date).toDateString()}
                 </p>
 
+                <div>
+                  <h1 className="font-bold mb-1">Task Description</h1>
+                  <p>{task?.description}</p>
+                </div>
+
                 <div className='flex items-center gap-8 p-4 border-y border-gray-200'>
                   <div className='space-x-2'>
                     <span className='font-semibold'>Assets :</span>

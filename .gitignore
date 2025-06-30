@@ -5,3 +5,4 @@ client/node_modules/
 node_modules/
 .env
 server/whatsapp.js
+server/quickberry.js

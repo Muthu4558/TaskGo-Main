@@ -1,14 +1,61 @@
+import cron from 'node-cron';
+import fetch from 'node-fetch';
 import nodemailer from 'nodemailer';
-import Task from "../models/task.js";
-import User from "../models/user.js";
+import Task from '../models/task.js';
+import User from '../models/user.js';
 
-// Function to send email using nodemailer
+const QIKCHAT_API_KEY = process.env.QIKCHAT_API_KEY;
+const QIKCHAT_API_URL = process.env.QIKCHAT_API_URL;
+
+// Helper: send WhatsApp template via QikChat
+const sendWhatsAppTemplate = async (phone, templateName, parameters) => {
+  const payload = {
+    to_contact: `+91${phone}`,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: 'en',
+      components: [
+        {
+          type: 'body',
+          parameters: parameters.map(param => ({ type: 'text', text: param })),
+        },
+      ],
+    },
+  };
+
+  try {
+    const response = await fetch(QIKCHAT_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'QIKCHAT-API-KEY': QIKCHAT_API_KEY,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const result = await response.json();
+    if (!response.ok || result.status === false) {
+      console.error('❌ WhatsApp send failed:', result);
+    } else {
+      console.log('✅ WhatsApp message sent:', result);
+    }
+  } catch (error) {
+    console.error('🔥 WhatsApp error:', error.message);
+  }
+};
+
+// Helper: send email
 const sendEmail = async (to, subject, text, htmlContent) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false, // Allow self-signed certificates
     },
   });
 
@@ -29,7 +76,7 @@ const sendEmail = async (to, subject, text, htmlContent) => {
 export const createTask = async (req, res) => {
   try {
     const { userId, tenantId } = req.user;
-    const { title, team, stage, date, priority, assets } = req.body;
+    const { title,description, team, stage, date, priority, assets } = req.body;
 
     let text = "New task has been assigned to you";
     if (team?.length > 1) {
@@ -38,15 +85,11 @@ export const createTask = async (req, res) => {
 
     text = `${text} The task priority is set at ${priority} priority, so check and act accordingly. The task date is ${new Date(date).toDateString()}. Thank you!!!`;
 
-    const activity = {
-      type: "assigned",
-      activity: text,
-      by: userId,
-    };
+    const activity = { type: 'assigned', activity: text, by: userId };
 
-    // Ensure task is created with tenantId
     const task = await Task.create({
       title,
+      description,
       team,
       stage: stage.toLowerCase(),
       date,
@@ -56,25 +99,33 @@ export const createTask = async (req, res) => {
       tenantId,
     });
 
-    // Fetch team members' emails and send email notifications
-    for (const userId of team) {
-      const user = await User.findOne({ _id: userId, tenantId }); // Ensure user belongs to the same tenant
-      if (user && user.email) {
-        const emailContent = `
-          <h3>New Task Assigned: ${title}</h3>
-          <p>${text}</p>
-          <p>Task Due Date: ${new Date(date).toDateString()}</p>
-        `;
+    // Notify each team member
+    for (const memberId of team) {
+      const user = await User.findOne({ _id: memberId, tenantId });
+      if (!user) continue;
 
-        // Send email to the user
-        await sendEmail(user.email, `Task Assigned: ${title}`, text, emailContent);
+      // Email
+      if (user.email) {
+        const emailSubject = `Task Assigned: ${title}`;
+        const emailText = text;
+        const emailHtml = `<h3>New Task: ${title}</h3><p>${text}</p>`;
+        await sendEmail(user.email, emailSubject, emailText, emailHtml);
+      }
+
+      // WhatsApp
+      if (user.phone) {
+        await sendWhatsAppTemplate(
+          user.phone,
+          'taskgo_task_assigning_message_1',
+          [title, priority, new Date(date).toDateString()]
+        );
       }
     }
 
-    res.status(200).json({ status: true, task, message: "Task assigned successfully." });
+    res.status(200).json({ status: true, task, message: 'Task assigned and notifications sent.' });
   } catch (error) {
-    console.error('Error in creating task or sending emails:', error);
-    return res.status(400).json({ status: false, message: error.message });
+    console.error('Error in createTask:', error);
+    res.status(400).json({ status: false, message: error.message });
   }
 };
 
@@ -154,7 +205,7 @@ export const postTaskActivity = async (req, res) => {
 
 export const dashboardStatistics = async (req, res) => {
   try {
-    const { userId, isAdmin, tenantId } = req.user; // Extract tenantId from user
+    const { userId, isAdmin, tenantId } = req.user;
 
     if (!tenantId) {
       return res.status(400).json({ status: false, message: "Tenant ID is required" });
@@ -162,8 +213,8 @@ export const dashboardStatistics = async (req, res) => {
 
     const allTasks = await Task.find({
       isTrashed: false,
-      tenantId, // Ensure tasks belong to the same tenant
-      ...(isAdmin ? {} : { team: { $all: [userId] } }) // Filter for non-admins
+      tenantId,
+      ...(isAdmin ? {} : { team: { $all: [userId] } })
     })
       .populate({
         path: "team",
@@ -172,19 +223,22 @@ export const dashboardStatistics = async (req, res) => {
       .sort({ _id: -1 });
 
     const users = isAdmin
-      ? await User.find({ isActive: true, tenantId }) // Filter users by tenantId
+      ? await User.find({ isActive: true, tenantId })
         .select("name title role isAdmin createdAt")
         .limit(10)
         .sort({ _id: -1 })
       : [];
 
-    // Group tasks by stage
     const groupTaskks = allTasks.reduce((result, task) => {
       result[task.stage] = (result[task.stage] || 0) + 1;
       return result;
     }, {});
 
-    // Group tasks by priority
+    const totalTasks = allTasks.length;
+    const todoTasks = groupTaskks["todo"] || 0;
+    const inProgressTasks = groupTaskks["in progress"] || 0;
+    const completedTasks = groupTaskks["completed"] || 0;
+
     const groupData = Object.entries(
       allTasks.reduce((result, task) => {
         result[task.priority] = (result[task.priority] || 0) + 1;
@@ -192,7 +246,6 @@ export const dashboardStatistics = async (req, res) => {
       }, {})
     ).map(([name, total]) => ({ name, total }));
 
-    const totalTasks = allTasks.length;
     const last10Task = allTasks.slice(0, 10);
 
     const data = {
@@ -213,6 +266,51 @@ export const dashboardStatistics = async (req, res) => {
     return res.status(400).json({ status: false, message: error.message });
   }
 };
+
+// Cron Job: Daily WhatsApp Summary at 9.00 AM
+const sendDailyDashboardSummary = async () => {
+  try {
+    const users = await User.find({ isActive: true, phone: { $exists: true, $ne: '' } });
+
+    for (const user of users) {
+      const tasks = await Task.find({
+        isTrashed: false,
+        tenantId: user.tenantId,
+        team: { $all: [user._id] },
+      });
+
+      const stageCounts = tasks.reduce((acc, task) => {
+        acc[task.stage] = (acc[task.stage] || 0) + 1;
+        return acc;
+      }, {});
+
+      const totalTasks = tasks.length;
+      const todo = stageCounts["todo"] || 0;
+      const inProgress = stageCounts["in progress"] || 0;
+      const completed = stageCounts["completed"] || 0;
+
+      await sendWhatsAppTemplate(
+        user.phone,
+        'taskgo_14', // Replace with your real QikChat template name
+        [
+          user.name || 'User',
+          `${totalTasks}`,
+          `${todo}`,
+          `${inProgress}`,
+          `${completed}`,
+        ]
+      );
+    }
+  } catch (err) {
+    console.error("📛 Error sending daily summary:", err.message);
+  }
+};
+
+// Start cron job on server start
+cron.schedule('0 9 * * *', () => {
+  console.log("⏰ Running daily WhatsApp dashboard summary...");
+  sendDailyDashboardSummary();
+});
 
 export const getTasks = async (req, res) => {
   try {
@@ -328,11 +426,12 @@ export const createSubTask = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, date, team, stage, priority, assets } = req.body;
+    const { title, description, date, team, stage, priority, assets } = req.body;
 
     const task = await Task.findById(id);
 
     task.title = title;
+    task.description = description;
     task.date = date;
     task.priority = priority.toLowerCase();
     task.assets = assets;
