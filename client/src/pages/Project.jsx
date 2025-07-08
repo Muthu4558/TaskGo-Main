@@ -29,6 +29,7 @@ const Project = () => {
     stage: 'todo',
     team: [],
     projectId: '',
+    projectTitle: '',
   });
 
   const navigate = useNavigate();
@@ -218,7 +219,11 @@ const Project = () => {
               {isEditing ? 'Edit Project' : 'Create New Project'}
             </h2>
             <form onSubmit={handleSubmit}>
-              <label className='font-bold'>Project Title</label>
+              {/* <label className='font-bold'>Project Title</label> */}
+              <p className="mb-4">
+                {/* <span className="font-bold">Project:</span> {assignForm.projectTitle} */}
+              </p>
+
               <input
                 type="text"
                 placeholder="Project Title"
@@ -274,6 +279,9 @@ const Project = () => {
         <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-20">
           <div className="bg-white p-8 rounded-md w-[400px]">
             <h2 className="text-2xl font-semibold mb-4">Assign Task In Project</h2>
+            <p className="mb-4 text-center">
+              <span className="font-bold mt-2">Project:</span> {assignForm.projectTitle}
+            </p>
             <form onSubmit={handleAssignSubmit}>
               <label className='font-bold'>Task Title</label>
               <input
@@ -364,28 +372,37 @@ const Project = () => {
                   onClick={() => handleEdit(project)}
                   className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 text-blue-600 hover:bg-blue-200 text-sm font-semibold"
                 >
-                  <MdEdit /> Edit
+                  <MdEdit />
                 </button>
                 <button
                   onClick={() => handleDelete(project._id)}
                   className="flex items-center gap-1 px-2 py-1 rounded-md bg-red-100 text-red-600 hover:bg-red-200 text-sm font-semibold"
                 >
-                  <MdDelete /> Delete
+                  <MdDelete />
                 </button>
                 <button
                   onClick={() => handleOpen(project)}
                   className="flex items-center gap-1 px-2 py-1 rounded-md bg-green-100 text-green-600 hover:bg-green-200 text-sm font-semibold"
                 >
-                  <MdOpenInBrowser /> Open
+                  <MdOpenInBrowser />
                 </button>
                 <button
                   onClick={() => {
-                    setAssignForm({ ...assignForm, projectId: project._id });
+                    setAssignForm({
+                      taskTitle: '',
+                      dueDate: '',
+                      priority: 'medium',
+                      stage: 'todo',
+                      team: [],
+                      projectId: project._id,
+                      projectTitle: project.title // <-- added
+                    });
+
                     setIsAssignModalOpen(true);
                   }}
                   className="flex items-center gap-1 px-2 py-1 rounded-md bg-purple-100 text-purple-600 hover:bg-purple-200 text-sm font-semibold"
                 >
-                  <MdAdd /> Add User
+                  <MdAdd /> Assign User
                 </button>
               </div>
             </div>
