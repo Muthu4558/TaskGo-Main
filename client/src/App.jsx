@@ -25,6 +25,8 @@ import UserDashboard from './pages/UserDashboard';
 import UserProjectTasks from './pages/UserProjectTasks.jsx';
 import PagenotFound from './components/PagenotFound.jsx';
 import IdeaBoard from './pages/IdeaBoard.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+
 
 function Layout() {
   const { user } = useSelector((state) => state.auth);
@@ -140,6 +142,7 @@ const App = () => {
 
         {/* Login Page */}
         <Route path="/log-in" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} /> 
 
         {/* Catch-all route for 404 */}
         <Route path="*" element={<PagenotFound />} />

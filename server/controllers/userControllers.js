@@ -1,5 +1,6 @@
 import User from "../models/user.js";
 import Task from "../models/task.js";
+import OTPStore from "../models/otpStore.js";
 import { createJWT } from "../config/db.js";
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
@@ -76,6 +77,69 @@ const sendEmail = async (to, subject, text, htmlContent) => {
     console.log(`📧 Email sent to: ${to}`);
   } catch (error) {
     console.error(`❌ Email failed to ${to}:`, error);
+  }
+};
+
+export const sendOTP = async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const expireAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await OTPStore.findOneAndUpdate(
+      { email },
+      { otp, expireAt },
+      { upsert: true, new: true }
+    );
+
+    await sendEmail(
+      email,
+      "OTP for Password Reset",
+      `Your OTP is: ${otp}`,
+      `<h3>Your OTP is: <strong>${otp}</strong></h3><p>Valid for 10 minutes.</p>`
+    );
+
+    res.status(200).json({ message: "OTP sent to email." });
+  } catch (error) {
+    console.error("Error sending OTP:", error);
+    res.status(500).json({ message: "Failed to send OTP" });
+  }
+};
+
+export const verifyOTP = async (req, res) => {
+  const { email, otp } = req.body;
+
+  try {
+    const record = await OTPStore.findOne({ email });
+
+    if (!record) return res.status(400).json({ message: "OTP not found" });
+    if (record.otp !== otp) return res.status(400).json({ message: "Incorrect OTP" });
+    if (record.expireAt < new Date()) return res.status(400).json({ message: "OTP expired" });
+
+    res.status(200).json({ message: "OTP verified" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to verify OTP" });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  const { email, newPassword } = req.body;
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    user.password = newPassword;
+    await user.save();
+    await OTPStore.deleteOne({ email });
+
+    res.status(200).json({ message: "Password has been reset successfully." });
+  } catch (error) {
+    res.status(500).json({ message: "Reset failed" });
   }
 };
 

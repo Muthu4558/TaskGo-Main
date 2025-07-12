@@ -12,6 +12,9 @@ import {
   logoutUser,
   registerUser,
   updateUserProfile,
+  sendOTP,
+  verifyOTP,
+  resetPassword
 } from "../controllers/userControllers.js";
 
 const router = express.Router();
@@ -19,6 +22,9 @@ const router = express.Router();
 router.post("/register", protectRoute, registerUser, isAdminRoute);
 router.post("/login", loginUser);
 router.post("/logout", logoutUser);
+router.post("/forgot-password", sendOTP);
+router.post("/verify-otp", verifyOTP);
+router.post("/reset-password", resetPassword);
 
 router.get("/admin", protectRoute, getAdmin)
 router.get("/get-team", protectRoute, getTeamList);

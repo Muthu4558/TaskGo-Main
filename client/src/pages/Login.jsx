@@ -127,6 +127,10 @@ const Login = () => {
                 label={isLoading ? "Loading..." : "Submit"}
                 className="w-full h-10 bg-[#229ea6] text-white rounded-full"
               />
+
+              <a href="/forgot-password" className="text-sm text-center text-gray-500 hover:text-[#229ea6]">
+                Forgot Password?
+              </a>
             </div>
           </form>
         </div>

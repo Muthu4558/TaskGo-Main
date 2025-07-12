@@ -291,13 +291,13 @@ const sendDailyDashboardSummary = async () => {
 
       await sendWhatsAppTemplate(
         user.phone,
-        'taskgo_14', // Replace with your real QikChat template name
+        'taskgo_76', // Replace with your real QikChat template name
         [
           user.name || 'User',
           `${totalTasks}`,
-          `${todo}`,
-          `${inProgress}`,
           `${completed}`,
+          `${inProgress}`,
+          `${todo}`,
         ]
       );
     }
@@ -307,7 +307,7 @@ const sendDailyDashboardSummary = async () => {
 };
 
 // Start cron job on server start
-cron.schedule('0 9 * * *', () => {
+cron.schedule('0 11 * * *', () => {
   console.log("⏰ Running daily WhatsApp dashboard summary...");
   sendDailyDashboardSummary();
 });
