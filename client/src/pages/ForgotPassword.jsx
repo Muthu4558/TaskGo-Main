@@ -3,12 +3,14 @@ import axios from "axios";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import Loading from "../components/Loader";
+import { FiEye, FiEyeOff } from "react-icons/fi";
 
 const ForgotPassword = () => {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
@@ -135,14 +137,24 @@ const ForgotPassword = () => {
             )}
 
             {step === 3 && (
-              <div className="space-y-4">
-                <input
-                  type="password"
-                  placeholder="New Password"
-                  className="w-full border border-[#229ea6] px-4 py-2 rounded-full outline-none focus:ring-2 focus:ring-[#229ea6]"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
+              <div className="space-y-4 relative">
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="New Password"
+                    className="w-full border border-[#229ea6] px-4 py-2 pr-10 rounded-full outline-none focus:ring-2 focus:ring-[#229ea6]"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-2.5 text-[#229ea6]"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                  </button>
+                </div>
+
                 <button
                   onClick={handleResetPassword}
                   className="w-full bg-[#229ea6] hover:bg-[#1b8d94] text-white py-2 rounded-full transition"
