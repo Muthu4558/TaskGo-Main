@@ -16,7 +16,7 @@ const ForgotPassword = () => {
   const handleSendOTP = async () => {
     setLoading(true);
     try {
-      await axios.post("/api/user/forgot-password", { email });
+      await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/user/forgot-password`, { email });
       toast.success("OTP sent to your email", {
         style: {
           backgroundColor: "#4caf50",
@@ -36,7 +36,7 @@ const ForgotPassword = () => {
   const handleVerifyOTP = async () => {
     setLoading(true);
     try {
-      await axios.post("/api/user/verify-otp", { email, otp });
+      await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/user/verify-otp`, { email, otp });
       toast.success("OTP verified", {
         style: {
           backgroundColor: "#4caf50",
@@ -56,7 +56,7 @@ const ForgotPassword = () => {
   const handleResetPassword = async () => {
     setLoading(true);
     try {
-      await axios.post("/api/user/reset-password", {
+      await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/user/reset-password`, {
         email,
         newPassword,
       });
