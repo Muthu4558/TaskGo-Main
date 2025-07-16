@@ -28,6 +28,7 @@ const AddTask = ({ open, setOpen, task }) => {
   const { user } = useSelector((state) => state.auth);  // Get current user
   const defaultValues = {
     title: task?.title || "",
+    description: task?.description || "",
     date: dateFormatter(task?.date || new Date()),
     team: task?.team || (user ? [user] : []),  // Add the logged-in user by default to the team
     stage: "",

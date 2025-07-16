@@ -8,7 +8,123 @@ import { toast } from "sonner";
 import { Toaster } from "react-hot-toast";
 import { BsEyeFill } from 'react-icons/bs';
 import { MdAdd, MdDelete, MdEdit, MdOpenInBrowser } from 'react-icons/md';
+import { DndContext, useDraggable } from '@dnd-kit/core';
 
+// LocalStorage Key for positions
+const POSITION_STORAGE_KEY = "project-card-positions";
+
+// ---- CHILD: DRAGGABLE CARD ----
+function DraggableCard({
+  project,
+  position = { x: 0, y: 0 },
+  onEdit,
+  onDelete,
+  onOpen,
+  setAssignForm,
+  setIsAssignModalOpen,
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging
+  } = useDraggable({ id: project._id });
+
+  const x = position.x + (transform?.x || 0);
+  const y = position.y + (transform?.y || 0);
+
+  const style = {
+    transform: `translate3d(${x}px,${y}px,0)`,
+    cursor: isDragging ? "grabbing" : "grab",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    touchAction: "none",
+    zIndex: isDragging ? 30 : 1,
+    transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(.22,.68,0,1.71)',
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="bg-white shadow-lg rounded-2xl p-6 border hover:shadow-xl transition-all duration-300 select-none"
+      {...attributes}
+    >
+      {/* DRAG HANDLE: Only this area enables DnD */}
+      <div
+        {...listeners}
+        className="mb-3 cursor-grab hover:cursor-grabbing select-none font-semibold text-lg text-gray-800"
+        style={{ userSelect: 'none' }}
+        title="Drag to move card"
+      >
+        <span role="img" aria-label="drag" style={{marginRight: 6}}>↕️</span>{project.title}
+      </div>
+
+      {/* Rest of the card content */}
+      <div className="space-y-1 text-sm text-gray-600">
+        <p>
+          <span className="font-medium">Due:</span> {new Date(project.dueDate).toLocaleDateString()}
+        </p>
+        <p>
+          <span className="font-medium">Priority:</span>
+          <span className={`inline-block px-2 py-0.5 rounded-full text-white ${
+            project.priority === 'high' ? 'bg-red-500' :
+            project.priority === 'medium' ? 'bg-yellow-500' :
+            'bg-green-500'}`}>
+            {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
+          </span>
+        </p>
+      </div>
+
+      <div className="mt-4 flex justify-end gap-3 flex-wrap">
+        <button
+          onClick={() => onEdit(project)}
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 text-blue-600 hover:bg-blue-200 text-sm font-semibold"
+          type="button"
+        >
+          <MdEdit />
+        </button>
+        <button
+          onClick={() => onDelete(project._id)}
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-red-100 text-red-600 hover:bg-red-200 text-sm font-semibold"
+          type="button"
+        >
+          <MdDelete />
+        </button>
+        <button
+          onClick={() => onOpen(project)}
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-green-100 text-green-600 hover:bg-green-200 text-sm font-semibold"
+          type="button"
+        >
+          <MdOpenInBrowser />
+        </button>
+        <button
+          onClick={() => {
+            setAssignForm({
+              taskTitle: '',
+              dueDate: '',
+              priority: 'medium',
+              stage: 'todo',
+              team: [],
+              projectId: project._id,
+              projectTitle: project.title,
+            });
+            setIsAssignModalOpen(true);
+          }}
+          className="flex items-center gap-1 px-2 py-1 rounded-md bg-purple-100 text-purple-600 hover:bg-purple-200 text-sm font-semibold"
+          type="button"
+        >
+          <MdAdd /> Assign User
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---- MAIN PAGE ----
 const Project = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
@@ -32,7 +148,50 @@ const Project = () => {
     projectTitle: '',
   });
 
+  // DND position map, persisted to localStorage
+  const [positionMap, setPositionMap] = useState({});
+
+  // For accessibility/drag state (not required, but can be used for visual feedback/etc)
+  const [activeId, setActiveId] = useState(null);
+
   const navigate = useNavigate();
+
+  // ---- Utility: Load/save card positions to localStorage ----
+  function savePositionsToStorage(pos) {
+    try {
+      window.localStorage.setItem(POSITION_STORAGE_KEY, JSON.stringify(pos));
+    } catch {}
+  }
+  function loadPositionsFromStorage() {
+    try {
+      const raw = window.localStorage.getItem(POSITION_STORAGE_KEY);
+      if (raw) {
+        return JSON.parse(raw);
+      }
+    } catch {}
+    return {};
+  }
+
+  // On mount, load persistent positions
+  useEffect(() => {
+    setPositionMap(loadPositionsFromStorage());
+  }, []);
+
+  // Each time project list changes, reset positions for missing/deleted projects
+  useEffect(() => {
+    if (projects.length > 0) {
+      setPositionMap(prev => {
+        const filtered = {};
+        projects.forEach(proj => {
+          filtered[proj._id] = prev[proj._id] || { x: 0, y: 0 };
+        });
+        savePositionsToStorage(filtered);
+        return filtered;
+      });
+    }
+  }, [projects]);
+
+  // ---- CRUD, assign, and open functions (no change) ----
 
   const fetchProjects = async () => {
     try {
@@ -41,7 +200,6 @@ const Project = () => {
         withCredentials: true,
       });
       setProjects(res.data);
-      // toast.success('Projects loaded successfully');
     } catch (err) {
       console.error('Failed to fetch projects:', err);
       toast.error('Failed to load projects');
@@ -50,7 +208,7 @@ const Project = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);  // Start loading
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       if (isEditing) {
@@ -95,10 +253,9 @@ const Project = () => {
         }
       });
     } finally {
-      setLoading(false);  // Stop loading
+      setLoading(false);
     }
   };
-
 
   const handleEdit = (project) => {
     setFormData(project);
@@ -119,9 +276,14 @@ const Project = () => {
           fontSize: "16px",
           padding: "10px",
         }
-      }
-      );
+      });
       fetchProjects();
+      setPositionMap(pos => {
+        const newPos = { ...pos };
+        delete newPos[id];
+        savePositionsToStorage(newPos);
+        return newPos;
+      });
     } catch (err) {
       console.error('Failed to delete project:', err);
       toast.error('Failed to delete project', {
@@ -131,8 +293,7 @@ const Project = () => {
           fontSize: "16px",
           padding: "10px",
         }
-      }
-      );
+      });
     }
   };
 
@@ -142,19 +303,13 @@ const Project = () => {
 
   const handleAssignSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // Start loading
-
+    setLoading(true);
     try {
-      const payload = {
-        ...assignForm,
-        projectId: assignForm.projectId
-      };
-
+      const payload = { ...assignForm, projectId: assignForm.projectId };
       await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/project-details`, payload, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
         withCredentials: true,
       });
-
       toast.success('User assigned to project successfully', {
         style: {
           backgroundColor: "#4caf50",
@@ -163,7 +318,6 @@ const Project = () => {
           padding: "10px",
         }
       });
-
       setIsAssignModalOpen(false);
       setAssignForm({ taskTitle: '', dueDate: '', priority: 'medium', stage: 'todo', team: [], projectId: '' });
     } catch (err) {
@@ -177,18 +331,35 @@ const Project = () => {
         }
       });
     } finally {
-      setLoading(false); // End loading
+      setLoading(false);
     }
   };
-
 
   useEffect(() => {
     fetchProjects();
   }, []);
 
+  // ---- DnD onDragEnd ----
+  function handleDragEnd({ active, delta }) {
+    setActiveId(null);
+    setPositionMap(prev => {
+      const newPos = {
+        ...prev,
+        [active.id]: {
+          x: (prev[active.id]?.x || 0) + delta.x,
+          y: (prev[active.id]?.y || 0) + delta.y
+        }
+      };
+      savePositionsToStorage(newPos);
+      return newPos;
+    });
+  }
+
+  // ---- Render ----
   return (
     <div>
       <Toaster position="bottom-right" reverseOrder={false} />
+      {/* Header */}
       <div className="md:flex justify-between items-center">
         <Title title="Project" className="mb-4" />
         <div className="flex gap-5">
@@ -219,11 +390,6 @@ const Project = () => {
               {isEditing ? 'Edit Project' : 'Create New Project'}
             </h2>
             <form onSubmit={handleSubmit}>
-              {/* <label className='font-bold'>Project Title</label> */}
-              <p className="mb-4">
-                {/* <span className="font-bold">Project:</span> {assignForm.projectTitle} */}
-              </p>
-
               <input
                 type="text"
                 placeholder="Project Title"
@@ -323,7 +489,6 @@ const Project = () => {
                 <option value="in progress">In Progress</option>
                 <option value="completed">Completed</option>
               </select>
-
               <div className="flex justify-end mt-4">
                 <button
                   type="button"
@@ -339,76 +504,42 @@ const Project = () => {
                 >
                   {loading ? 'Loading...' : 'Assign'}
                 </button>
-
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Display Projects */}
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.length === 0 ? (
-          <div className="text-2xl font-bold col-span-3 text-center text-gray-500">
-            No projects available. Please create a new project.
-          </div>
-        ) : (
-          projects.map((project) => (
-            <div
-              key={project._id}
-              className="bg-white shadow-lg rounded-2xl p-6 border hover:shadow-xl transition-all duration-300"
-            >
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                {project.title}
-              </h3>
-              <div className="space-y-1 text-sm text-gray-600">
-                <p><span className="font-medium">Due:</span> {new Date(project.dueDate).toLocaleDateString()}</p>
-                <p><span className="font-medium">Priority:</span> <span className={`inline-block px-2 py-0.5 rounded-full text-white ${project.priority === 'high' ? 'bg-red-500' : project.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'}`}>
-                  {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
-                </span></p>
-              </div>
-              <div className="mt-4 flex justify-end gap-3 flex-wrap">
-                <button
-                  onClick={() => handleEdit(project)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-blue-100 text-blue-600 hover:bg-blue-200 text-sm font-semibold"
-                >
-                  <MdEdit />
-                </button>
-                <button
-                  onClick={() => handleDelete(project._id)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-red-100 text-red-600 hover:bg-red-200 text-sm font-semibold"
-                >
-                  <MdDelete />
-                </button>
-                <button
-                  onClick={() => handleOpen(project)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-green-100 text-green-600 hover:bg-green-200 text-sm font-semibold"
-                >
-                  <MdOpenInBrowser />
-                </button>
-                <button
-                  onClick={() => {
-                    setAssignForm({
-                      taskTitle: '',
-                      dueDate: '',
-                      priority: 'medium',
-                      stage: 'todo',
-                      team: [],
-                      projectId: project._id,
-                      projectTitle: project.title // <-- added
-                    });
-
-                    setIsAssignModalOpen(true);
-                  }}
-                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-purple-100 text-purple-600 hover:bg-purple-200 text-sm font-semibold"
-                >
-                  <MdAdd /> Assign User
-                </button>
-              </div>
+      {/* Display Projects with DRAGGABLE CARDS */}
+      <DndContext
+        onDragStart={({ active }) => setActiveId(active.id)}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative">
+          {projects.length === 0 ? (
+            <div className="text-2xl font-bold col-span-3 text-center text-gray-500">
+              No projects available. Please create a new project.
             </div>
-          ))
-        )}
-      </div>
+          ) : (
+            projects.map((project) => (
+              <div
+                key={project._id}
+                style={{ position: 'relative', minHeight: 250 }}
+              >
+                <DraggableCard
+                  project={project}
+                  position={positionMap[project._id] || { x: 0, y: 0 }}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  onOpen={handleOpen}
+                  setAssignForm={setAssignForm}
+                  setIsAssignModalOpen={setIsAssignModalOpen}
+                />
+              </div>
+            ))
+          )}
+        </div>
+      </DndContext>
     </div>
   );
 };
