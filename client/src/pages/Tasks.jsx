@@ -9,6 +9,7 @@ import TaskTitle from "../components/TaskTitle";
 import BoardView from "../components/BoardView";
 import AddTask from "../components/task/AddTask";
 import { useGetAllTaskQuery } from "../redux/slices/api/taskApiSlice";
+import Table from "../components/task/Table";
 
 const TABS = [];
 
@@ -20,6 +21,7 @@ const TASK_TYPE = {
 
 const Tasks = () => {
   const params = useParams();
+  const status = params?.status || "";
 
   const [selected, setSelected] = useState(0);
   const [open, setOpen] = useState(false);
@@ -28,62 +30,75 @@ const Tasks = () => {
   const [filterPriority, setFilterPriority] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const status = params?.status || "";
-
   const { data, isLoading } = useGetAllTaskQuery({
     strQuery: status === "overdue" ? "overdue" : status,
     isTrashed: "",
     search: "",
   });
 
-  const processedTasks = data?.tasks.map((task) => {
-    const isOverdue = task.date && new Date(task.date) < new Date();
-    return {
-      ...task,
-      isOverdue,
-      dynamicClass:
-        isOverdue && task.stage !== "completed"
-          ? "bg-red-600"
-          : TASK_TYPE[task.stage],
-    };
-  });
+  const processedTasks =
+    data?.tasks.map((task) => {
+      const isOverdue = task.date && new Date(task.date) < new Date();
+      return {
+        ...task,
+        isOverdue,
+        dynamicClass:
+          isOverdue && task.stage !== "completed"
+            ? "bg-red-600"
+            : TASK_TYPE[task.stage],
+      };
+    }) || [];
 
-  const searchedTasks = processedTasks?.filter((task) =>
+  const searchedTasks = processedTasks.filter((task) =>
     task.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredTasks = searchedTasks?.filter((task) => {
+  const filteredTasks = searchedTasks.filter((task) => {
     const matchCreatedDate = filterDate
       ? new Date(task.createdAt).toDateString() ===
         new Date(filterDate).toDateString()
       : true;
-
     const matchDueDate = filterDueDate
       ? task.date &&
         new Date(task.date).toDateString() ===
           new Date(filterDueDate).toDateString()
       : true;
-
     const matchPriority = filterPriority
       ? task.priority?.toLowerCase() === filterPriority.toLowerCase()
       : true;
-
     return matchCreatedDate && matchDueDate && matchPriority;
   });
 
-  return isLoading ? (
-    <div className="py-10">
-      <Loading />
-    </div>
-  ) : (
+  if (isLoading) {
+    return (
+      <div className="py-10">
+        <Loading />
+      </div>
+    );
+  }
+
+  // ✅ Overdue Page - Hide Add Task & Filters
+  if (status === "overdue") {
+    return (
+      <div className="w-full">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
+          <Title title="Overdue Tasks" />
+        </div>
+        <Table tasks={processedTasks.filter((t) => t.isOverdue)} showFiltersAndActions={false} />
+        <AddTask open={open} setOpen={setOpen} />
+      </div>
+    );
+  }
+
+  // 🔁 Normal Task View
+  return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
         <Title title={status ? `${status} Tasks` : "Tasks"} />
-
         <div className="flex items-center gap-4 flex-wrap">
           {!status && (
             <>
-              {/* Search by Title */}
+              {/* Search */}
               <div className="flex flex-col">
                 <label>Search:</label>
                 <input
@@ -94,7 +109,7 @@ const Tasks = () => {
                   className="border border-gray-300 rounded-lg px-4 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition-all duration-300 bg-white text-gray-800 text-lg"
                 />
               </div>
-              {/* Created Date Filter */}
+              {/* Created Date */}
               <div className="flex flex-col">
                 <label>Created Date:</label>
                 <input
@@ -104,8 +119,7 @@ const Tasks = () => {
                   className="border border-gray-300 rounded-lg px-4 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition-all duration-300 bg-white text-gray-800 text-lg"
                 />
               </div>
-
-              {/* Due Date Filter */}
+              {/* Due Date */}
               <div className="flex flex-col">
                 <label>Due Date:</label>
                 <input
@@ -115,8 +129,7 @@ const Tasks = () => {
                   className="border border-gray-300 rounded-lg px-4 py-1 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition-all duration-300 bg-white text-gray-800 text-lg"
                 />
               </div>
-
-              {/* Priority Filter */}
+              {/* Priority */}
               <div className="flex flex-col">
                 <label>Priority:</label>
                 <select
@@ -130,7 +143,7 @@ const Tasks = () => {
                   <option value="Low">Low</option>
                 </select>
               </div>
-
+              {/* Clear Filters */}
               <button
                 onClick={() => {
                   setFilterDate("");
@@ -144,37 +157,36 @@ const Tasks = () => {
               </button>
             </>
           )}
-
           {!status && (
             <Button
               onClick={() => setOpen(true)}
               label="Create Task"
               icon={<IoMdAdd className="text-lg" />}
-              className="flex flex-row-reverse gap-1 items-center bg-[#229ea6] text-white rounded-md py-2 2xl:py-2.5"
+              className="flex flex-row-reverse gap-1 items-center bg-[#229ea6] text-white rounded-md py-2"
             />
           )}
         </div>
-      </div>
 
-      <Tabs tabs={TABS} setSelected={setSelected}>
-        {!status && (
-          <div className="w-full flex justify-between gap-4 md:gap-x-12 py-4">
-            <TaskTitle label="To Do" className={TASK_TYPE.todo} />
-            <TaskTitle
-              label="In Progress"
-              className={TASK_TYPE["in progress"]}
-            />
-            <TaskTitle label="Completed" className={TASK_TYPE.completed} />
-          </div>
-        )}
-        {Array.isArray(filteredTasks) && filteredTasks.length === 0 ? (
-          <div className="text-center text-gray-500 py-10 text-2xl font-bold">
-            No tasks available in {status || "this category"}.
-          </div>
-        ) : (
-          <BoardView tasks={filteredTasks} />
-        )}
-      </Tabs>
+        <Tabs tabs={TABS} setSelected={setSelected}>
+          {!status && (
+            <div className="w-full flex justify-between gap-4 md:gap-x-12 py-4">
+              <TaskTitle label="To Do" className={TASK_TYPE.todo} />
+              <TaskTitle
+                label="In Progress"
+                className={TASK_TYPE["in progress"]}
+              />
+              <TaskTitle label="Completed" className={TASK_TYPE.completed} />
+            </div>
+          )}
+          {Array.isArray(filteredTasks) && filteredTasks.length === 0 ? (
+            <div className="text-center text-gray-500 py-10 text-2xl font-bold">
+              No tasks available in {status || "this category"}.
+            </div>
+          ) : (
+            <BoardView tasks={filteredTasks} />
+          )}
+        </Tabs>
+      </div>
 
       <AddTask open={open} setOpen={setOpen} />
     </div>

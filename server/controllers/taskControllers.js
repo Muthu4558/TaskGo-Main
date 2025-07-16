@@ -307,7 +307,7 @@ const sendDailyDashboardSummary = async () => {
 };
 
 // Start cron job on server start
-cron.schedule('0 11 * * *', () => {
+cron.schedule('0 9 * * *', () => {
   console.log("⏰ Running daily WhatsApp dashboard summary...");
   sendDailyDashboardSummary();
 });
