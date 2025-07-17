@@ -6,6 +6,11 @@ import { Toaster } from "react-hot-toast";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { BiEditAlt, BiUpload } from "react-icons/bi";
 import { MdDelete } from "react-icons/md";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+} from "@hello-pangea/dnd"; // ✅ Updated import
 
 const DailyReport = () => {
   const [content, setContent] = useState("");
@@ -15,16 +20,17 @@ const DailyReport = () => {
   const [dropdownVisible, setDropdownVisible] = useState(null);
   const [filterDate, setFilterDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState(""); // ✅ Status filter
+  const [statusFilter, setStatusFilter] = useState("");
 
   const { user } = useSelector((state) => state.auth);
 
   const fetchReports = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/${user._id}`);
-      const sortedReports = response.data.sort((a, b) =>
-        new Date(b.createdAt || b.dateTime) - new Date(a.createdAt || a.dateTime)
+      const response = await axios.get(
+        `${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/${user._id}`
       );
+      const sortedReports = response.data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
       setReports(sortedReports);
     } catch (error) {
       console.error("Error fetching reports:", error.response?.data || error.message);
@@ -39,13 +45,23 @@ const DailyReport = () => {
       if (editingReport) {
         try {
           const updatedReport = { content, remark: editingReport.remark };
-          await axios.put(`${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/${editingReport._id}`, updatedReport);
+          await axios.put(
+            `${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/${editingReport._id}`,
+            updatedReport
+          );
           setReports((prevReports) =>
             prevReports.map((report) =>
               report._id === editingReport._id ? { ...report, content } : report
             )
           );
-          toast.success("Report successfully updated!");
+          toast.success("Report successfully updated!", {
+            style: {
+              backgroundColor: "#4caf50",
+              color: "#fff",
+              fontSize: "16px",
+              padding: "10px"
+            },
+          });
           setEditingReport(null);
           setContent("");
         } catch (error) {
@@ -91,7 +107,14 @@ const DailyReport = () => {
       setReports((prevReports) =>
         prevReports.map((report) => (report._id === id ? { ...report, status } : report))
       );
-      toast.success("Status updated successfully!");
+      toast.success("Status updated successfully!", {
+        style: {
+          backgroundColor: "#4caf50",
+          color: "#fff",
+          fontSize: "16px",
+          padding: "10px"
+        },
+      });
     } catch (error) {
       setError("Error updating status.");
       toast.error("Failed to update status.");
@@ -102,7 +125,14 @@ const DailyReport = () => {
     try {
       await axios.delete(`${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/${id}`);
       setReports((prevReports) => prevReports.filter((report) => report._id !== id));
-      toast.success("Report deleted successfully!");
+      toast.success("Report deleted successfully!", {
+        style: {
+          backgroundColor: "#4caf50",
+          color: "#fff",
+          fontSize: "16px",
+          padding: "10px"
+        },
+      });
     } catch (error) {
       setError("Error deleting report.");
       toast.error("Failed to delete report.");
@@ -111,6 +141,37 @@ const DailyReport = () => {
 
   const toggleDropdown = (id) => {
     setDropdownVisible((prev) => (prev === id ? null : id));
+  };
+
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const reorderedReports = Array.from(reports);
+    const [movedItem] = reorderedReports.splice(result.source.index, 1);
+    reorderedReports.splice(result.destination.index, 0, movedItem);
+
+    const updatedOrder = reorderedReports.map((report, index) => ({
+      id: report._id,
+      order: index,
+    }));
+
+    setReports(reorderedReports);
+
+    try {
+      await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/reorder`, {
+        reordered: updatedOrder,
+      });
+      toast.success("Task order updated!", {
+        style: {
+          backgroundColor: "#4caf50",
+          color: "#fff",
+          fontSize: "16px",
+          padding: "10px"
+        },
+      });
+    } catch (error) {
+      toast.error("Failed to reorder tasks");
+    }
   };
 
   useEffect(() => {
@@ -206,84 +267,97 @@ const DailyReport = () => {
                     <th className="border px-4 py-3">Remark (From Admin)</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {reports
-                    .filter((report) => {
-                      const reportDate = new Date(report.createdAt || report.dateTime).toDateString();
-                      const selectedDate = new Date(filterDate).toDateString();
-                      const matchesDate = !filterDate || reportDate === selectedDate;
-                      const matchesSearch = report.content
-                        .toLowerCase()
-                        .includes(searchQuery.toLowerCase());
-                      const matchesStatus =
-                        !statusFilter || report.status?.toLowerCase() === statusFilter.toLowerCase();
-                      return matchesDate && matchesSearch && matchesStatus;
-                    })
-                    .map((report, index) => (
-                      <tr
-                        key={report._id || index}
-                        className={`hover:bg-gray-100 ${index % 2 === 0 ? "bg-gray-50" : "bg-white"}`}
-                      >
-                        <td className="border px-4 py-3">{index + 1}</td>
-                        <td className="border px-4 py-3 break-words">{report.content}</td>
-                        <td className="border px-4 py-3">No Attachment</td>
-                        <td className="border px-4 py-3">
-                          {new Date(report.createdAt || report.dateTime).toLocaleString()}
-                        </td>
-                        <td className="border px-4 py-3">
-                          <select
-                            className="border rounded px-2 py-1"
-                            value={report.status || "Todo"}
-                            onChange={(e) => handleStatusChange(report._id, e.target.value)}
-                          >
-                            <option value="Completed">Completed</option>
-                            <option value="In progress">In progress</option>
-                            <option value="Todo">Todo</option>
-                            <option value="Maintaining">Maintaining</option>
-                          </select>
-                        </td>
-                        <td className="border px-4 py-3 relative">
-                          <button
-                            onClick={() => toggleDropdown(report._id)}
-                            className="text-gray-700 hover:text-gray-900"
-                          >
-                            <BsThreeDotsVertical size={20} />
-                          </button>
-                          {dropdownVisible === report._id && (
-                            <div className="absolute right-0 mt-2 bg-white border shadow-lg rounded-md z-10">
-                              <label
-                                htmlFor="file-upload"
-                                className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 cursor-pointer"
-                              >
-                                <BiUpload size={20} /> Upload
-                                <input
-                                  id="file-upload"
-                                  type="file"
-                                  className="hidden"
-                                  accept="image/*,application/pdf"
-                                />
-                              </label>
-                              <button
-                                onClick={() => handleEdit(report)}
-                                className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
-                              >
-                                <BiEditAlt size={20} /> Edit
-                              </button>
-                              <button
-                                onClick={() => handleDelete(report._id)}
-                                className="flex gap-2 items-center px-4 py-2 text-sm text-red-700 hover:bg-gray-200"
-                              >
-                                <MdDelete size={20} /> Delete
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                        <td className="border px-4 py-3 break-words">
-                          {report.remark || "No remark yet"}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <Droppable droppableId="reportTable">
+                    {(provided) => (
+                      <tbody ref={provided.innerRef} {...provided.droppableProps}>
+                        {reports
+                          .filter((report) => {
+                            const reportDate = new Date(report.createdAt || report.dateTime).toDateString();
+                            const selectedDate = new Date(filterDate).toDateString();
+                            const matchesDate = !filterDate || reportDate === selectedDate;
+                            const matchesSearch = report.content
+                              .toLowerCase()
+                              .includes(searchQuery.toLowerCase());
+                            const matchesStatus =
+                              !statusFilter || report.status?.toLowerCase() === statusFilter.toLowerCase();
+                            return matchesDate && matchesSearch && matchesStatus;
+                          })
+                          .map((report, index) => (
+                            <Draggable key={report._id} draggableId={report._id} index={index}>
+                              {(provided) => (
+                                <tr
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`hover:bg-gray-100 ${index % 2 === 0 ? "bg-gray-50" : "bg-white"}`}
+                                >
+                                  <td className="border px-4 py-3">{index + 1}</td>
+                                  <td className="border px-4 py-3 break-words">{report.content}</td>
+                                  <td className="border px-4 py-3">No Attachment</td>
+                                  <td className="border px-4 py-3">
+                                    {new Date(report.createdAt || report.dateTime).toLocaleString()}
+                                  </td>
+                                  <td className="border px-4 py-3">
+                                    <select
+                                      className="border rounded px-2 py-1"
+                                      value={report.status || "Todo"}
+                                      onChange={(e) => handleStatusChange(report._id, e.target.value)}
+                                    >
+                                      <option value="Completed">Completed</option>
+                                      <option value="In progress">In progress</option>
+                                      <option value="Todo">Todo</option>
+                                      <option value="Maintaining">Maintaining</option>
+                                    </select>
+                                  </td>
+                                  <td className="border px-4 py-3 relative">
+                                    <button
+                                      onClick={() => toggleDropdown(report._id)}
+                                      className="text-gray-700 hover:text-gray-900"
+                                    >
+                                      <BsThreeDotsVertical size={20} />
+                                    </button>
+                                    {dropdownVisible === report._id && (
+                                      <div className="absolute right-0 mt-2 bg-white border shadow-lg rounded-md z-10">
+                                        <label
+                                          htmlFor="file-upload"
+                                          className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 cursor-pointer"
+                                        >
+                                          <BiUpload size={20} /> Upload
+                                          <input
+                                            id="file-upload"
+                                            type="file"
+                                            className="hidden"
+                                            accept="image/*,application/pdf"
+                                          />
+                                        </label>
+                                        <button
+                                          onClick={() => handleEdit(report)}
+                                          className="flex gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-200"
+                                        >
+                                          <BiEditAlt size={20} /> Edit
+                                        </button>
+                                        <button
+                                          onClick={() => handleDelete(report._id)}
+                                          className="flex gap-2 items-center px-4 py-2 text-sm text-red-700 hover:bg-gray-200"
+                                        >
+                                          <MdDelete size={20} /> Delete
+                                        </button>
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="border px-4 py-3 break-words">
+                                    {report.remark || "No remark yet"}
+                                  </td>
+                                </tr>
+                              )}
+                            </Draggable>
+                          ))}
+                        {provided.placeholder}
+                      </tbody>
+                    )}
+                  </Droppable>
+                </DragDropContext>
               </table>
             </div>
           ) : (

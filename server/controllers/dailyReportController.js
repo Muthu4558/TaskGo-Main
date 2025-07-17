@@ -3,12 +3,26 @@ import nodemailer from "nodemailer";
 import User from "../models/user.js";
 
 const transporter = nodemailer.createTransport({
-  service: "gmail", 
+  service: "gmail",
   auth: {
     user: "taskmanager@mamce.org",
     pass: "fchs ppue ehkq lfzi",   // Replace with your email password or app-specific password
   },
 });
+
+export const reorderReports = async (req, res) => {
+  const { reordered } = req.body;
+
+  try {
+    const updates = reordered.map(({ id, order }) =>
+      DailyReport.findByIdAndUpdate(id, { order })
+    );
+    await Promise.all(updates);
+    res.status(200).json({ message: "Reports reordered successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error reordering reports" });
+  }
+};
 
 export const getAllReports = async (req, res) => {
   const { userId } = req.query; // Fetch userId from query params
@@ -33,12 +47,12 @@ export const getDailyReports = async (req, res) => {
 };
 
 export const createReport = async (req, res) => {
-  const { content, date, userId } = req.body; // Accept userId from the request body
+  const { content, date, userId } = req.body; 
   try {
     const newReport = new DailyReport({
       content,
       date: date || new Date().toLocaleString(),
-      userId, // Assign the report to the user
+      userId,
     });
     const savedReport = await newReport.save();
     res.status(201).json(savedReport);
@@ -49,13 +63,12 @@ export const createReport = async (req, res) => {
 
 export const updateReport = async (req, res) => {
   const { id } = req.params;
-  const { status, remark } = req.body;  // Add remark in request body
+  const { status, remark } = req.body; 
 
   try {
-    // Find and update the report
     const updatedReport = await DailyReport.findByIdAndUpdate(
       id,
-      { status, remark },  // Update the status and remark
+      { status, remark }, 
       { new: true }
     );
 
@@ -63,7 +76,6 @@ export const updateReport = async (req, res) => {
       return res.status(404).json({ message: "Report not found" });
     }
 
-    // Fetch the associated user using the userId from the updated report
     const user = await User.findById(updatedReport.userId);
 
     if (!user) {
@@ -72,15 +84,13 @@ export const updateReport = async (req, res) => {
 
     const userEmail = user.email;
 
-    // Send the email to the user's email address
     const mailOptions = {
-      from: "taskmanager@mamce.org",  // Sender address
-      to: userEmail,                 // Recipient address
-      subject: "Daily Report Updated",  // Subject line
-      text: `The daily report has been updated.\n\nRemark: ${remark}`,  // Email body with the remark
+      from: "taskmanager@mamce.org", 
+      to: userEmail,                
+      subject: "Daily Report Updated",  
+      text: `The daily report has been updated.\n\nRemark: ${remark}`, 
     };
 
-    // Send email
     transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
         console.error("Error sending email:", error);
@@ -90,7 +100,6 @@ export const updateReport = async (req, res) => {
       }
     });
 
-    // Return the updated report as response
     res.status(200).json(updatedReport);
   } catch (error) {
     console.error("Error updating report:", error);

@@ -4,7 +4,8 @@ import {
     createReport,
     updateReport,
     deleteReport,
-    getDailyReports
+    getDailyReports,
+    reorderReports,
 } from "../controllers/dailyReportController.js";
 
 const router = express.Router();
@@ -14,6 +15,7 @@ router.route("/").get(getAllReports).post(createReport);
 router.route("/:id").put(updateReport).delete(deleteReport);
 
 router.get("/:userId", getDailyReports);
+router.post("/reorder", reorderReports);
 
 
 export default router;
