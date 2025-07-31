@@ -10,7 +10,7 @@ import {
   DragDropContext,
   Droppable,
   Draggable,
-} from "@hello-pangea/dnd"; // ✅ Updated import
+} from "@hello-pangea/dnd";
 
 const DailyReport = () => {
   const [content, setContent] = useState("");
@@ -30,7 +30,6 @@ const DailyReport = () => {
         `${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/${user._id}`
       );
       const sortedReports = response.data.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-
       setReports(sortedReports);
     } catch (error) {
       console.error("Error fetching reports:", error.response?.data || error.message);
@@ -77,10 +76,33 @@ const DailyReport = () => {
             userId: user._id,
             remark: "",
           };
-          await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports`, newReport);
+          const { data: createdReport } = await axios.post(
+            `${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports`,
+            newReport
+          );
+
+          const updatedReports = [createdReport, ...reports];
+
+          const reordered = updatedReports.map((r, i) => ({
+            id: r._id,
+            order: i,
+          }));
+
+          setReports(updatedReports);
+
+          await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/reorder`, {
+            reordered,
+          });
+
           setContent("");
-          fetchReports();
-          toast.success("Report submitted successfully!");
+          toast.success("Report submitted successfully!", {
+            style: {
+              backgroundColor: "#4caf50",
+              color: "#fff",
+              fontSize: "16px",
+              padding: "10px"
+            },
+          });
         } catch (error) {
           setError("Error submitting report.");
           toast.error("Failed to submit report.");
@@ -124,7 +146,12 @@ const DailyReport = () => {
   const handleDelete = async (id) => {
     try {
       await axios.delete(`${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/${id}`);
-      setReports((prevReports) => prevReports.filter((report) => report._id !== id));
+      const updatedReports = reports.filter((report) => report._id !== id);
+      const reordered = updatedReports.map((r, i) => ({ id: r._id, order: i }));
+      setReports(updatedReports);
+      await axios.post(`${import.meta.env.VITE_APP_BASE_URL}/api/daily-reports/reorder`, {
+        reordered,
+      });
       toast.success("Report deleted successfully!", {
         style: {
           backgroundColor: "#4caf50",

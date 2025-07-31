@@ -211,15 +211,15 @@ const ProjectDetails = () => {
                             <div className="flex justify-end gap-2 mt-4 flex-wrap">
                                 <button
                                     onClick={() => handleEditTask(task)}
-                                    className="flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-800 text-white rounded-md"
+                                    className="flex items-center gap-1 px-2 py-1 text-black rounded-md"
                                 >
-                                    <FaEdit /> Edit
+                                    <FaEdit size={18}/>
                                 </button>
                                 <button
                                     onClick={() => handleDeleteTask(task._id)}
-                                    className="flex items-center gap-1 px-2 py-1 bg-red-600 hover:bg-red-800 text-white rounded-md"
+                                    className="flex items-center gap-1 px-2 py-1 text-black rounded-md"
                                 >
-                                    <FaTrashAlt /> Delete
+                                    <FaTrashAlt size={18}/>
                                 </button>
                             </div>
                         </li>
