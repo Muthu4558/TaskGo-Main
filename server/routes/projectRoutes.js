@@ -2,6 +2,7 @@ import express from 'express';
 import {
   createProject,
   getUserProjects,
+  reorderProjects,
   updateProject,
   deleteProject,
   getProjectById,
@@ -15,6 +16,8 @@ router.post('/', protectRoute, createProject);
 
 // Get all projects for logged-in user
 router.get('/', protectRoute, getUserProjects);
+
+router.put("/reorder", protectRoute, reorderProjects);
 
 // Update project by ID
 router.put('/:id', protectRoute, updateProject);

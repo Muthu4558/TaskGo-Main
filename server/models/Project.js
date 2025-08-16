@@ -1,13 +1,14 @@
-// models/projectModel.js
-import mongoose from 'mongoose';
+// models/Project.js
+import mongoose from "mongoose";
 
 const projectSchema = new mongoose.Schema({
   title: { type: String, required: true },
   dueDate: { type: Date, required: true },
-  priority: { type: String, required: true },
+  priority: { type: String, default: "medium" },
   assets: { type: String },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  tenantId: { type: String, required: true },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  tenantId: { type: String },
+  order: { type: Number, default: Date.now } // NEW
 }, { timestamps: true });
 
-export default mongoose.model('Project', projectSchema);
+export default mongoose.model("Project", projectSchema);

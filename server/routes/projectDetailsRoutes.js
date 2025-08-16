@@ -6,26 +6,30 @@ import {
   updateProjectDetailStatus,
   deleteProjectDetail,
   editProjectDetail,
-  getProjectDetailsByUser
+  getProjectDetailsByUser,
+  reorderProjectDetails,
 } from '../controllers/projectDetailsController.js';
 import { protectRoute } from '../middlewares/authmiddlewave.js';
 
 const router = express.Router();
 
-// POST: Create a new task for a project
+// Specific routes first
 router.post('/', protectRoute, createProjectDetail);
 
-// GET: Fetch all tasks for a specific project
-router.get('/:projectId', protectRoute, getProjectDetailsByProjectId);
-
 router.get('/user/assigned/all', protectRoute, getProjectDetailsAssignedToUser);
+router.get('/user/:userId', protectRoute, getProjectDetailsByUser);
 
-router.patch('/:id/status', protectRoute, updateProjectDetailStatus); // ✅ New route
+// Reorder endpoint
+router.put('/reorder', protectRoute, reorderProjectDetails);
 
-router.put('/:id', editProjectDetail);
+// Status update
+router.patch('/:id/status', protectRoute, updateProjectDetailStatus);
 
-router.delete('/:id', deleteProjectDetail);
+// Edit & delete
+router.put('/:id', protectRoute, editProjectDetail);
+router.delete('/:id', protectRoute, deleteProjectDetail);
 
-router.get("/user/:userId", getProjectDetailsByUser);
+// Finally: get all tasks for a project (by projectId)
+router.get('/:projectId', protectRoute, getProjectDetailsByProjectId);
 
 export default router;

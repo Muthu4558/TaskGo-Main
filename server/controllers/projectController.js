@@ -1,4 +1,3 @@
-// controllers/projectController.js
 import Project from '../models/Project.js';
 
 export const createProject = async (req, res) => {
@@ -28,11 +27,26 @@ export const createProject = async (req, res) => {
 
 export const getUserProjects = async (req, res) => {
   try {
-    const projects = await Project.find({ createdBy: req.user.userId }).sort({ createdAt: -1 });
+    const projects = await Project.find({ createdBy: req.user.userId })
+      .sort({ order: -1 });
     res.status(200).json(projects);
   } catch (error) {
-    console.error('Error fetching user projects:', error);
     res.status(500).json({ message: error.message });
+  }
+};
+
+export const reorderProjects = async (req, res) => {
+  try {
+    const { projects } = req.body;
+    for (let proj of projects) {
+      await Project.findOneAndUpdate(
+        { _id: proj._id, createdBy: req.user.userId },
+        { order: proj.order }
+      );
+    }
+    res.json({ message: "Projects reordered successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 

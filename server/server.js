@@ -4,7 +4,7 @@ import nodemailer from "nodemailer";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
-import connectDB from "./config/db.js"; // Assuming you have MongoDB connection setup
+import connectDB from "./config/db.js"; 
 import routes from "./routes/index.js";
 
 dotenv.config();
@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = process.env.ALLOWED_ORIGINS.split(",");
 app.use(cors({
   origin: allowedOrigins,
-  methods: ["GET", "POST", "DELETE", "PUT"],
+  methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
   credentials: true,
 }));
 

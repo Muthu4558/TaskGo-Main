@@ -5,8 +5,8 @@ import nodemailer from 'nodemailer';
 const QIKCHAT_API_KEY = process.env.QIKCHAT_API_KEY;
 const QIKCHAT_API_URL = process.env.QIKCHAT_API_URL;
 
-// Helper: send WhatsApp template via QikChat
 const sendWhatsAppTemplate = async (phone, templateName, parameters) => {
+  if (!QIKCHAT_API_URL || !QIKCHAT_API_KEY) return;
   const payload = {
     to_contact: `+91${phone}`,
     type: 'template',
@@ -32,7 +32,6 @@ const sendWhatsAppTemplate = async (phone, templateName, parameters) => {
       },
       body: JSON.stringify(payload),
     });
-
     const result = await response.json();
     if (!response.ok || result.status === false) {
       console.error('❌ WhatsApp send failed:', result);
@@ -44,13 +43,17 @@ const sendWhatsAppTemplate = async (phone, templateName, parameters) => {
   }
 };
 
-// Email utility function
 const sendEmail = async (to, subject, text, htmlContent) => {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('Email credentials not configured; skipping email send');
+    return;
+  }
+
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.EMAIL_USER, // Your Gmail
-      pass: process.env.EMAIL_PASS  // Your App Password (not your Gmail password)
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
   });
 
@@ -70,59 +73,54 @@ const sendEmail = async (to, subject, text, htmlContent) => {
 
 export const createProjectDetail = async (req, res) => {
   try {
-    const { projectId, taskTitle, dueDate, priority, stage, team } = req.body;
+    const { projectId, taskTitle, dueDate, priority, stage = 'todo', team = [] } = req.body;
 
-    // Step 1: Create the project detail
+    // determine highest order + 1
+    const highest = await ProjectDetail.findOne({ projectId }).sort({ order: -1 }).select('order');
+    const nextOrder = highest && typeof highest.order === 'number' ? highest.order + 1 : 1;
+
     const detail = await ProjectDetail.create({
       projectId,
       taskTitle,
       dueDate,
       priority,
       stage,
-      team
+      team,
+      order: nextOrder,
     });
 
-    // Step 2: Get team members' email and phone numbers
+    // populate team users
     const users = await User.find({ _id: { $in: team } }, 'email name phone');
 
-    const teamEmails = users.map(user => user.email);
+    // notify each user (email + optional WhatsApp)
+    for (const user of users) {
+      // email (if configured)
+      await sendEmail(
+        user.email,
+        '📝 New Task Assigned in TaskGo',
+        `Hi ${user.name},\n\nYou have been assigned a new task: "${taskTitle}" due on ${new Date(dueDate).toLocaleDateString()}.`,
+        `<p>Hi <strong>${user.name}</strong>,</p>
+         <p>You have been assigned a new task: <strong>${taskTitle}</strong>.</p>
+         <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString()}</p>
+         <p><strong>Priority:</strong> ${priority}</p>
+         <p><strong>Stage:</strong> ${stage}</p>
+         <p>Please login to <a href="https://taskgo.in">TaskGo</a> to view your task.</p>`
+      );
 
-    // Step 3: Send email & WhatsApp to each team member
-    if (users.length === 0) {
-      console.warn('⚠️ No users found in the team array to send notifications');
-    } else {
-      for (const user of users) {
-        // --- Send Email ---
-        await sendEmail(
-          user.email,
-          '📝 New Task Assigned in TaskGo',
-          `Hi ${user.name},\n\nYou have been assigned a new task: "${taskTitle}" due on ${new Date(dueDate).toLocaleDateString()}.`,
-          `<p>Hi <strong>${user.name}</strong>,</p>
-           <p>You have been assigned a new task: <strong>${taskTitle}</strong>.</p>
-           <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString()}</p>
-           <p><strong>Priority:</strong> ${priority}</p>
-           <p><strong>Stage:</strong> ${stage}</p>
-           <p>Please login to <a href="https://taskgo.in">TaskGo</a> to view your task.</p>`
-        );
-
-        // --- Send WhatsApp (Template: taskgo_12) ---
-        if (user.phone) {
-          await sendWhatsAppTemplate(user.phone, 'taskgo_12', [
-            user.name,
-            taskTitle,
-            new Date(dueDate).toLocaleDateString(),
-            priority,
-            stage
-          ]);
-        } else {
-          console.warn(`⚠️ No phone number found for user ${user.name}`);
-        }
+      // whatsapp template (optional)
+      if (user.phone) {
+        await sendWhatsAppTemplate(user.phone, 'taskgo_12', [
+          user.name,
+          taskTitle,
+          new Date(dueDate).toLocaleDateString(),
+          priority,
+          stage,
+        ]);
       }
     }
 
-    // Step 4: Send response
-    res.status(201).json({ detail, teamEmails });
-
+    const populated = await ProjectDetail.findById(detail._id).populate('team', 'name email phone');
+    res.status(201).json(populated);
   } catch (err) {
     console.error('❌ Error creating project detail:', err);
     res.status(400).json({ message: err.message });
@@ -131,9 +129,12 @@ export const createProjectDetail = async (req, res) => {
 
 export const getProjectDetailsByProjectId = async (req, res) => {
   try {
-    const details = await ProjectDetail.find({ projectId: req.params.projectId }).populate('team', 'name email');
+    const details = await ProjectDetail.find({ projectId: req.params.projectId })
+      .populate('team', 'name email phone')
+      .sort({ order: -1 }); // highest order first
     res.status(200).json(details);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -142,21 +143,20 @@ export const getProjectDetailsAssignedToUser = async (req, res) => {
   try {
     const userId = req.user.userId;
 
-    // Fetch project details where the user is part of the team
     const details = await ProjectDetail.find({ team: userId })
       .populate({
         path: 'projectId',
-        select: 'title dueDate priority assets' // Ensure you're populating the project details
+        select: 'title dueDate priority assets',
       })
-      .populate('team', 'name email'); // Ensure team members' names and emails are populated
+      .populate('team', 'name email');
 
     if (!details || details.length === 0) {
-      return res.status(404).json({ message: "No project tasks found for this user" });
+      return res.status(404).json({ message: 'No project tasks found for this user' });
     }
 
     res.status(200).json(details);
   } catch (err) {
-    console.error("Error fetching assigned project details:", err);
+    console.error('Error fetching assigned project details:', err);
     res.status(500).json({ message: err.message });
   }
 };
@@ -166,16 +166,10 @@ export const updateProjectDetailStatus = async (req, res) => {
   const { stage } = req.body;
 
   try {
-    const updated = await ProjectDetail.findByIdAndUpdate(
-      id,
-      { stage },
-      { new: true }
-    );
-
+    const updated = await ProjectDetail.findByIdAndUpdate(id, { stage }, { new: true }).populate('team', 'name email phone');
     if (!updated) {
       return res.status(404).json({ message: 'Project detail not found' });
     }
-
     res.json(updated);
   } catch (err) {
     console.error('Error updating status:', err);
@@ -185,14 +179,14 @@ export const updateProjectDetailStatus = async (req, res) => {
 
 export const editProjectDetail = async (req, res) => {
   const { id } = req.params;
-  const { taskTitle, dueDate, priority, stage, team } = req.body; // Fields to be updated
+  const { taskTitle, dueDate, priority, stage, team } = req.body;
 
   try {
     const updatedDetail = await ProjectDetail.findByIdAndUpdate(
       id,
-      { taskTitle, dueDate, priority, stage, team }, // Update multiple fields
-      { new: true } // Return the updated document
-    );
+      { taskTitle, dueDate, priority, stage, team },
+      { new: true }
+    ).populate('team', 'name email phone');
 
     if (!updatedDetail) {
       return res.status(404).json({ message: 'Project detail not found' });
@@ -226,21 +220,58 @@ export const getProjectDetailsByUser = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    // Fetch project details where the user is part of the team
     const details = await ProjectDetail.find({ team: userId })
       .populate({
         path: 'projectId',
-        select: 'taskTitle dueDate priority assets title' // Populate project details
+        select: 'title dueDate priority assets',
       })
-      .populate('team', 'name email'); // Populate team members (name, email)
+      .populate('team', 'name email');
 
     if (!details || details.length === 0) {
-      return res.status(404).json({ message: "No project tasks found for this user." });
+      return res.status(404).json({ message: 'No project tasks found for this user.' });
     }
 
     res.status(200).json(details);
   } catch (err) {
     console.error('Error fetching project details for user:', err);
     res.status(500).json({ message: err.message });
+  }
+};
+
+// New: reorder multiple tasks
+export const reorderProjectDetails = async (req, res) => {
+  try {
+    const { tasks } = req.body; // [{ _id, order }, ...]
+    if (!Array.isArray(tasks)) {
+      return res.status(400).json({ message: 'tasks must be an array' });
+    }
+
+    const bulkOps = tasks.map((t) => ({
+      updateOne: {
+        filter: { _id: t._id },
+        update: { $set: { order: t.order } },
+      },
+    }));
+
+    if (bulkOps.length > 0) {
+      await ProjectDetail.bulkWrite(bulkOps);
+    }
+
+    // return updated list for projectId (if tasks provided, derive projectId from first task)
+    const first = tasks[0];
+    let projectId = null;
+    if (first) {
+      const doc = await ProjectDetail.findById(first._id).select('projectId');
+      if (doc) projectId = doc.projectId;
+    }
+
+    const details = projectId
+      ? await ProjectDetail.find({ projectId }).populate('team', 'name email phone').sort({ order: -1 })
+      : [];
+
+    res.status(200).json({ message: 'Reordered', details });
+  } catch (err) {
+    console.error('Error reordering tasks:', err);
+    res.status(500).json({ message: 'Failed to reorder tasks' });
   }
 };
