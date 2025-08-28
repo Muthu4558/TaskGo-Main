@@ -1,17 +1,23 @@
-import { apiSlice } from "../apiSlice"
+import { apiSlice } from "../apiSlice";
 
 const TASKS_URL = "/task";
 
 export const taskApiSlice = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
-
+        // 🔹 Dashboard Stats with optional filters
         getDashboardStats: builder.query({
-            query: ({ tenantId }) => ({
-                url: `${TASKS_URL}/dashboard`,
-                method: "GET",
-                credentials: "include",
-                params: { tenantId },  // Pass tenantId dynamically
-            }),
+            query: ({ tenantId, month, year }) => {
+                const params = { tenantId };
+                if (month) params.month = month;
+                if (year) params.year = year;
+
+                return {
+                    url: `${TASKS_URL}/dashboard`,
+                    method: "GET",
+                    credentials: "include",
+                    params,
+                };
+            },
         }),
 
         getAllTask: builder.query({
@@ -22,7 +28,7 @@ export const taskApiSlice = apiSlice.injectEndpoints({
             }),
         }),
 
-        // New endpoint for fetching tasks assigned to a particular user
+        // 🔹 Fetch tasks assigned to a particular user
         getUserTasks: builder.query({
             query: (userId) => ({
                 url: `/users/${userId}/tasks`,
@@ -99,9 +105,8 @@ export const taskApiSlice = apiSlice.injectEndpoints({
                 credentials: "include",
             }),
         }),
-
     }),
-})
+});
 
 export const {
     useGetDashboardStatsQuery,
@@ -114,5 +119,5 @@ export const {
     useGetSingleTaskQuery,
     usePostTaskActivityMutation,
     useDeleteRestoreTaskMutation,
-    useGetUserTasksQuery
-} = taskApiSlice;  
+    useGetUserTasksQuery,
+} = taskApiSlice;

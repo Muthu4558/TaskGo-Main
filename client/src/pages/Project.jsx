@@ -14,7 +14,7 @@ const ProjectTableRow = ({ project, index, provided, snapshot, onEdit, onDeleteC
     <tr
       ref={provided?.innerRef}
       {...(provided ? provided.draggableProps : {})}
-      className={`bg-white ${snapshot && snapshot.isDragging ? 'shadow-lg scale-105' : ''} hover:bg-gray-50`}
+      className={`bg-white border-b border-gray-200 ${snapshot && snapshot.isDragging ? 'shadow-lg scale-105' : ''} hover:bg-gray-50`}
       style={{ ...(provided ? provided.draggableProps.style : {}) }}
     >
       <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
@@ -26,7 +26,7 @@ const ProjectTableRow = ({ project, index, provided, snapshot, onEdit, onDeleteC
         </div>
       </td>
 
-      <td className="px-4 py-3 text-sm text-gray-700 max-w-[360px]">
+      <td className="px-4 py-3 text-sm text-blue-600 max-w-[360px]">
         <div className="flex flex-col">
           <span className="font-medium truncate">{project.title}</span>
           {project.assets && <small className="text-xs text-gray-400 truncate">{project.assets}</small>}
@@ -43,9 +43,6 @@ const ProjectTableRow = ({ project, index, provided, snapshot, onEdit, onDeleteC
 
       <td className="px-4 py-3 text-sm whitespace-nowrap">
         <div className="flex items-center gap-2">
-          <button onClick={() => onEdit(project)} className="bg-blue-50 text-blue-600 px-2 py-1 rounded-md hover:bg-blue-100" title="Edit"><MdEdit /></button>
-          <button onClick={() => onDeleteConfirm(project)} className="bg-red-50 text-red-600 px-2 py-1 rounded-md hover:bg-red-100" title="Delete"><MdDelete /></button>
-          <button onClick={() => onOpen(project)} className="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md hover:bg-emerald-100" title="Open"><MdOpenInBrowser /></button>
           <button
             onClick={() => {
               setAssignForm({
@@ -59,11 +56,15 @@ const ProjectTableRow = ({ project, index, provided, snapshot, onEdit, onDeleteC
               });
               setIsAssignModalOpen(true);
             }}
-            className="bg-purple-50 text-purple-600 px-2 py-1 rounded-md hover:bg-purple-100"
+            className="bg-[#229ea6] text-white px-2 py-1 rounded-md"
             title="Assign"
           >
-            <MdAdd />
+            Add task
           </button>
+          <button onClick={() => onEdit(project)} className="text-black px-2 py-1 rounded-md" title="Edit"><MdEdit /></button>
+          <button onClick={() => onDeleteConfirm(project)} className="text-red-600 px-2 py-1 rounded-md" title="Delete"><MdDelete /></button>
+          <button onClick={() => onOpen(project)} className="text-black px-2 py-1 rounded-md" title="Open"><MdOpenInBrowser /></button>
+
         </div>
       </td>
     </tr>
@@ -306,45 +307,71 @@ const Project = () => {
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-wrap">
           {/* Search & Filter */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-            <input
-              type="text"
-              placeholder="Search title or assets..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="px-3 py-2 border rounded-md w-full sm:w-64 text-sm"
-            />
-            <select
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
-              className="px-3 py-2 border rounded-md text-sm w-full sm:w-auto"
-            >
-              <option value="all">All priorities</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full justify-between">
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+              {/* Search */}
+              <div className="flex flex-col gap-1">
+                <label htmlFor="search" className="text-sm font-medium text-gray-600">
+                  Search
+                </label>
+                <input
+                  type="text"
+                  placeholder="Search title or assets..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="px-3 py-2 border rounded-md w-full sm:w-64 text-sm focus:outline-none focus:ring-2 focus:ring-[#229ea6] transition"
+                />
+              </div>
 
-          {/* Buttons */}
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => {
-                setIsModalOpen(true);
-                setIsEditing(false);
-                setFormData({ _id: '', title: '', dueDate: '', priority: 'medium', assets: '' });
-              }}
-              className="bg-[#229ea6] text-white p-3 rounded-md text-sm font-semibold flex items-center justify-center gap-2 w-full sm:w-auto"
-            >
-              <IoMdAdd className="text-lg" /> Create New Project
-            </button>
+              {/* Priority */}
+              <div className="flex flex-col gap-1">
+                <label htmlFor="priority" className="text-sm font-medium text-gray-600">
+                  Priority
+                </label>
+                <select
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-md text-sm w-full sm:w-40 focus:outline-none focus:ring-2 focus:ring-[#229ea6] transition"
+                >
+                  <option value="all">All priorities</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+            </div>
 
-            <button
-              onClick={() => navigate('/userproject')}
-              className="bg-[#229ea6] text-white p-3 rounded-md text-sm font-semibold flex items-center justify-center gap-2 w-full sm:w-auto"
-            >
-              <BsEyeFill /> Assigned Tasks
-            </button>
+            {/* Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-5">
+              {/* Create Project */}
+              <button
+                onClick={() => {
+                  setIsModalOpen(true);
+                  setIsEditing(false);
+                  setFormData({
+                    _id: "",
+                    title: "",
+                    dueDate: "",
+                    priority: "medium",
+                    assets: "",
+                  });
+                }}
+                className="bg-[#229ea6] hover:bg-[#1c858b] text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 w-full sm:w-auto transition"
+              >
+                <IoMdAdd className="text-lg" />
+                Create New Project
+              </button>
+
+              {/* Assigned Tasks */}
+              <button
+                onClick={() => navigate("/userproject")}
+                className="bg-[#229ea6] hover:bg-[#1c858b] text-white px-4 py-2 rounded-md text-sm font-semibold flex items-center justify-center gap-2 w-full sm:w-auto transition"
+              >
+                <BsEyeFill />
+                Assigned Tasks
+              </button>
+            </div>
           </div>
         </div>
 
@@ -403,10 +430,12 @@ const Project = () => {
       {isAssignModalOpen && (
         <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-md w-full max-w-lg mx-4">
-            <h2 className="text-2xl font-semibold mb-4">Assign Task In Project</h2>
-            <p className="mb-3"><strong>Project:</strong> {assignForm.projectTitle}</p>
+            <div className='flex justify-between items-center mb-4'>
+              <h2 className="text-2xl font-semibold mb-4">Add Task</h2>
+              <p className="text-2xl mb-3"><strong>Project:</strong> <span className='text-[#229ea6] font-bold'>{assignForm.projectTitle}</span></p>
+            </div>
             <form onSubmit={handleAssignSubmit}>
-              <label className="block font-bold mb-1">Task Title</label>
+              <label className="block font-bold mb-1">Title</label>
               <input type="text" className="w-full p-2 mb-3 border border-gray-300 rounded-md" placeholder="Task Title" value={assignForm.taskTitle} onChange={(e) => setAssignForm({ ...assignForm, taskTitle: e.target.value })} required />
 
               <UserList setTeam={(team) => setAssignForm({ ...assignForm, team })} team={assignForm.team} />
@@ -426,7 +455,7 @@ const Project = () => {
                 </div>
               </div>
 
-              <label className="block font-bold mt-3 mb-1">Stage</label>
+              <label className="block font-bold mt-3 mb-1">Status</label>
               <select className="w-full p-2 border border-gray-300 rounded-md" value={assignForm.stage} onChange={(e) => setAssignForm({ ...assignForm, stage: e.target.value })} required>
                 <option value="">Select Stage</option>
                 <option value="todo">To Do</option>
@@ -463,7 +492,7 @@ const Project = () => {
           <Droppable droppableId="projects-table" direction="vertical" renderClone={renderClone} isDropDisabled={!dragEnabled}>
             {(provided, snapshot) => (
               <table className="w-full table-auto border-collapse">
-                <thead className="bg-white/90 backdrop-blur sticky top-0 z-10">
+                <thead className="bg-[#229ea6] text-white backdrop-blur sticky top-0 z-10">
                   <tr>
                     <th className="text-left px-4 py-3 border-b">#</th>
                     <th className="text-left px-4 py-3 border-b">Title</th>
@@ -506,7 +535,7 @@ const Project = () => {
                             </div>
                           </td>
 
-                          <td className="px-4 py-3 text-sm text-gray-700 max-w-[360px]"><div className="truncate">{project.title}</div></td>
+                          <td className="px-4 py-3 text-sm text-gray-700 max-w-[360px]"><div className="truncat">{project.title}</div></td>
                           <td className="px-4 py-3 text-sm text-gray-600">{project.dueDate ? new Date(project.dueDate).toLocaleDateString() : '—'}</td>
                           <td className="px-4 py-3 text-sm"><span className={`inline-block px-2 py-1 rounded-full text-white text-xs ${project.priority === 'high' ? 'bg-red-600' : project.priority === 'medium' ? 'bg-yellow-500 text-black' : 'bg-green-600'}`}>{project.priority}</span></td>
                           <td className="px-4 py-3 text-sm whitespace-nowrap">

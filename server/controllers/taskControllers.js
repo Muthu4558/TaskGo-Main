@@ -55,7 +55,7 @@ const sendEmail = async (to, subject, text, htmlContent) => {
       pass: process.env.EMAIL_PASS,
     },
     tls: {
-      rejectUnauthorized: false, // Allow self-signed certificates
+      rejectUnauthorized: false,
     },
   });
 
@@ -76,16 +76,19 @@ const sendEmail = async (to, subject, text, htmlContent) => {
 export const createTask = async (req, res) => {
   try {
     const { userId, tenantId } = req.user;
-    const { title,description, team, stage, date, priority, assets } = req.body;
+    const { title, description, team, stage, date, priority, assets } = req.body;
+
+    // 👇 compute next order for this tenant
+    const maxOrderDoc = await Task.findOne({ tenantId }).sort({ order: -1 }).select('order');
+    const nextOrder = maxOrderDoc ? maxOrderDoc.order + 1 : 0;
 
     let text = "New task has been assigned to you";
     if (team?.length > 1) {
       text = text + ` and ${team?.length - 1} others.`;
     }
+    const fullText = `${text} The task priority is set at ${priority} priority, so check and act accordingly. The task date is ${new Date(date).toDateString()}. Thank you!!!`;
 
-    text = `${text} The task priority is set at ${priority} priority, so check and act accordingly. The task date is ${new Date(date).toDateString()}. Thank you!!!`;
-
-    const activity = { type: 'assigned', activity: text, by: userId };
+    const activity = { type: 'assigned', activity: fullText, by: userId };
 
     const task = await Task.create({
       title,
@@ -97,6 +100,7 @@ export const createTask = async (req, res) => {
       assets,
       activities: [activity],
       tenantId,
+      order: nextOrder, // 👈 set persisted order
     });
 
     // Notify each team member
@@ -104,15 +108,13 @@ export const createTask = async (req, res) => {
       const user = await User.findOne({ _id: memberId, tenantId });
       if (!user) continue;
 
-      // Email
       if (user.email) {
         const emailSubject = `Task Assigned: ${title}`;
-        const emailText = text;
-        const emailHtml = `<h3>New Task: ${title}</h3><p>${text}</p>`;
+        const emailText = fullText;
+        const emailHtml = `<h3>New Task: ${title}</h3><p>${fullText}</p>`;
         await sendEmail(user.email, emailSubject, emailText, emailHtml);
       }
 
-      // WhatsApp
       if (user.phone) {
         await sendWhatsAppTemplate(
           user.phone,
@@ -134,16 +136,20 @@ export const duplicateTask = async (req, res) => {
     const { id } = req.params;
     const { tenantId } = req.user;
 
-    const task = await Task.findOne({ _id: id, tenantId }); // Ensure task belongs to the same tenant
+    const task = await Task.findOne({ _id: id, tenantId });
     if (!task) {
       return res.status(404).json({ status: false, message: "Task not found" });
     }
 
-    const newTask = await Task.create({
+    const maxOrderDoc = await Task.findOne({ tenantId }).sort({ order: -1 }).select('order');
+    const nextOrder = maxOrderDoc ? maxOrderDoc.order + 1 : 0;
+
+    await Task.create({
       ...task.toObject(),
-      _id: undefined, // Remove the existing _id to create a new one
+      _id: undefined,
       title: task.title + " - Duplicate",
-      tenantId, // Ensure new task belongs to the same tenant
+      tenantId,
+      order: nextOrder,
     });
 
     res.status(200).json({ status: true, message: "Task duplicated successfully." });
@@ -156,46 +162,33 @@ export const duplicateTask = async (req, res) => {
 export const postTaskActivity = async (req, res) => {
   try {
     const { id } = req.params;
-    const { userId } = req.user; // This assumes user is authenticated and the userId is available
+    const { userId } = req.user;
     const { type, activity } = req.body;
 
-    // Find the task by ID and populate the 'team' field to get user details
     const task = await Task.findById(id).populate('team');
     if (!task) {
       return res.status(404).json({ status: false, message: "Task not found" });
     }
 
-    // Prepare the activity data to push into the task
-    const data = {
-      type,
-      activity,
-      by: userId,
-      date: new Date(),
-    };
+    const data = { type, activity, by: userId, date: new Date() };
 
-    // Push the activity to the task's activities array
     task.activities.push(data);
     await task.save();
 
-    // Ensure users are found (task.team should be populated)
     if (!task.team.length) {
       return res.status(404).json({ status: false, message: "No users found for this task" });
     }
 
-    // Prepare the email content
     const subject = `New Task Activity: ${type}`;
     const text = `There is a new activity"${type}": ${activity}`;
     const htmlContent = `<p>There is a new activity of type <strong>${type}</strong>: ${activity}</p>`;
 
-    // Send email to all users assigned to the task
     for (const user of task.team) {
-      if (user.email) { // Ensure the user has an email field
-        console.log(`Sending email to: ${user.email}`);
-        await sendEmail(user.email, subject, text, htmlContent); // Send email to each user
+      if (user.email) {
+        await sendEmail(user.email, subject, text, htmlContent);
       }
     }
 
-    // Respond with success message
     res.status(200).json({ status: true, message: "Activity posted successfully." });
   } catch (error) {
     console.log("Error posting task activity:", error);
@@ -206,27 +199,33 @@ export const postTaskActivity = async (req, res) => {
 export const dashboardStatistics = async (req, res) => {
   try {
     const { userId, isAdmin, tenantId } = req.user;
+    const { month, year } = req.query; // 👈 new filters
 
     if (!tenantId) {
       return res.status(400).json({ status: false, message: "Tenant ID is required" });
     }
 
+    let dateFilter = {};
+    if (month && year) {
+      const startDate = new Date(year, month - 1, 1); // first day of month
+      const endDate = new Date(year, month, 0, 23, 59, 59); // last day of month
+      dateFilter = { createdAt: { $gte: startDate, $lte: endDate } };
+    }
+
     const allTasks = await Task.find({
       isTrashed: false,
       tenantId,
-      ...(isAdmin ? {} : { team: { $all: [userId] } })
+      ...(isAdmin ? {} : { team: { $all: [userId] } }),
+      ...dateFilter,
     })
-      .populate({
-        path: "team",
-        select: "name role title email",
-      })
-      .sort({ _id: -1 });
+      .populate({ path: "team", select: "name role title email" })
+      .sort({ order: 1, _id: -1 });
 
     const users = isAdmin
       ? await User.find({ isActive: true, tenantId })
-        .select("name title role isAdmin createdAt")
-        .limit(10)
-        .sort({ _id: -1 })
+          .select("name title role isAdmin createdAt")
+          .limit(10)
+          .sort({ _id: -1 })
       : [];
 
     const groupTaskks = allTasks.reduce((result, task) => {
@@ -235,9 +234,6 @@ export const dashboardStatistics = async (req, res) => {
     }, {});
 
     const totalTasks = allTasks.length;
-    const todoTasks = groupTaskks["todo"] || 0;
-    const inProgressTasks = groupTaskks["in progress"] || 0;
-    const completedTasks = groupTaskks["completed"] || 0;
 
     const groupData = Object.entries(
       allTasks.reduce((result, task) => {
@@ -248,18 +244,14 @@ export const dashboardStatistics = async (req, res) => {
 
     const last10Task = allTasks.slice(0, 10);
 
-    const data = {
+    res.status(200).json({
+      status: true,
+      message: "Successfully retrieved dashboard data",
       totalTasks,
       last10Task,
       users,
       tasks: groupTaskks,
       graphData: groupData,
-    };
-
-    res.status(200).json({
-      status: true,
-      message: "Successfully retrieved dashboard data",
-      ...data,
     });
   } catch (error) {
     console.error(error);
@@ -267,7 +259,7 @@ export const dashboardStatistics = async (req, res) => {
   }
 };
 
-// Cron Job: Daily WhatsApp Summary at 9.00 AM
+
 const sendDailyDashboardSummary = async () => {
   try {
     const users = await User.find({ isActive: true, phone: { $exists: true, $ne: '' } });
@@ -291,14 +283,8 @@ const sendDailyDashboardSummary = async () => {
 
       await sendWhatsAppTemplate(
         user.phone,
-        'taskgo_76', // Replace with your real QikChat template name
-        [
-          user.name || 'User',
-          `${totalTasks}`,
-          `${completed}`,
-          `${inProgress}`,
-          `${todo}`,
-        ]
+        'taskgo_76',
+        [user.name || 'User', `${totalTasks}`, `${completed}`, `${inProgress}`, `${todo}`]
       );
     }
   } catch (err) {
@@ -306,7 +292,6 @@ const sendDailyDashboardSummary = async () => {
   }
 };
 
-// Start cron job on server start
 cron.schedule('0 9 * * *', () => {
   console.log("⏰ Running daily WhatsApp dashboard summary...");
   sendDailyDashboardSummary();
@@ -317,11 +302,11 @@ export const getTasks = async (req, res) => {
     const { stage, isTrashed } = req.query;
     const { userId, isAdmin, tenantId } = req.user;
 
-    let query = { isTrashed: isTrashed === "true", tenantId }; // Add tenantId to query
-
-    if (!isAdmin) {
-      query.team = { $all: [userId] };
-    }
+    const query = {
+      isTrashed: isTrashed === "true",
+      tenantId,
+      ...(isAdmin ? {} : { team: { $all: [userId] } })
+    };
 
     if (stage) {
       if (stage === "overdue") {
@@ -333,11 +318,8 @@ export const getTasks = async (req, res) => {
     }
 
     const tasks = await Task.find(query)
-      .populate({
-        path: "team",
-        select: "name title email",
-      })
-      .sort({ _id: -1 });
+      .populate({ path: "team", select: "name title email" })
+      .sort({ order: 1, _id: -1 }); // 👈 return in saved order
 
     res.status(200).json({ status: true, tasks });
   } catch (error) {
@@ -349,28 +331,17 @@ export const getTasks = async (req, res) => {
 export const getTask = async (req, res) => {
   try {
     const { id } = req.params;
-    // Assuming the tenant ID is available on req.user.tenant. Change this if needed.
-    const tenantId = req.user?.tenant || req.tenantId;
+    const tenantId = req.user?.tenantId || req.tenantId; // 👈 fixed
 
-    // Find the task by its id and tenant id.
-    const task = await Task.findOne({ _id: id, tenant: tenantId })
-      .populate({
-        path: "team",
-        select: "name title role email",
-      })
-      .populate({
-        path: "activities.by",
-        select: "name",
-      });
+    const task = await Task.findOne({ _id: id, tenantId })
+      .populate({ path: "team", select: "name title role email" })
+      .populate({ path: "activities.by", select: "name" });
 
     if (!task) {
       return res.status(404).json({ status: false, message: "Task not found" });
     }
 
-    res.status(200).json({
-      status: true,
-      task,
-    });
+    res.status(200).json({ status: true, task });
   } catch (error) {
     console.error(error);
     return res.status(400).json({ status: false, message: error.message });
@@ -382,23 +353,15 @@ export const createSubTask = async (req, res) => {
     const { title, tag, date } = req.body;
     const { id } = req.params;
 
-    // Create new subtask
     const newSubTask = { title, date, tag };
-
-    // Find the parent task
-    const task = await Task.findById(id).populate('team', 'email name'); // Populate team field for email addresses
-
+    const task = await Task.findById(id).populate('team', 'email name');
     if (!task) {
-      return res
-        .status(404)
-        .json({ status: false, message: 'Task not found.' });
+      return res.status(404).json({ status: false, message: 'Task not found.' });
     }
 
-    // Add the subtask to the task
     task.subTasks.push(newSubTask);
     await task.save();
 
-    // Notify all users in the task's team via email
     const emailPromises = task.team.map((user) => {
       const emailSubject = `More Task Added: ${title}`;
       const emailText = `A new subtask titled "${title}" has been added to the task "${task.title}".`;
@@ -413,7 +376,6 @@ export const createSubTask = async (req, res) => {
       return sendEmail(user.email, emailSubject, emailText, emailHtml);
     });
 
-    // Wait for all emails to be sent
     await Promise.all(emailPromises);
 
     res.status(200).json({ status: true, message: 'More Task added successfully.' });
@@ -426,23 +388,23 @@ export const createSubTask = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, date, team, stage, priority, assets } = req.body;
+    const { title, description, date, team, stage, priority, assets, order } = req.body;
 
     const task = await Task.findById(id);
+    if (!task) return res.status(404).json({ status: false, message: "Task not found" });
 
-    task.title = title;
-    task.description = description;
-    task.date = date;
-    task.priority = priority.toLowerCase();
-    task.assets = assets;
-    task.stage = stage.toLowerCase();
-    task.team = team;
+    if (title !== undefined) task.title = title;
+    if (description !== undefined) task.description = description;
+    if (date !== undefined) task.date = date;
+    if (priority !== undefined) task.priority = priority.toLowerCase();
+    if (assets !== undefined) task.assets = assets;
+    if (stage !== undefined) task.stage = stage.toLowerCase();
+    if (team !== undefined) task.team = team;
+    if (order !== undefined) task.order = order; // 👈 allow updating order
 
     await task.save();
 
-    res
-      .status(200)
-      .json({ status: true, message: "Task Updated successfully." });
+    res.status(200).json({ status: true, message: "Task Updated successfully." });
   } catch (error) {
     console.log(error);
     return res.status(400).json({ status: false, message: error.message });
@@ -454,15 +416,10 @@ export const trashTask = async (req, res) => {
     const { id } = req.params;
 
     const task = await Task.findById(id);
-
     task.isTrashed = true;
-
     await task.save();
 
-    res.status(200).json({
-      status: true,
-      message: `Task trashed successfully.`,
-    });
+    res.status(200).json({ status: true, message: `Task trashed successfully.` });
   } catch (error) {
     console.log(error);
     return res.status(400).json({ status: false, message: error.message });
@@ -482,7 +439,6 @@ export const deleteRestoreTask = async (req, res) => {
     } else if (actionType === "restore") {
       const resp = await Task.findOne({ _id: id, tenantId });
       if (!resp) return res.status(404).json({ status: false, message: "Task not found" });
-
       resp.isTrashed = false;
       await resp.save();
     } else if (actionType === "restoreAll") {
@@ -493,5 +449,41 @@ export const deleteRestoreTask = async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(400).json({ status: false, message: error.message });
+  }
+};
+
+// 👇 NEW: bulk reorder (one call after DnD)
+export const bulkReorderTasks = async (req, res) => {
+  try {
+    const { tasks } = req.body; // [{ id, order }]
+    const { tenantId } = req.user;
+
+    if (!Array.isArray(tasks)) {
+      return res.status(400).json({ status: false, message: "Invalid payload" });
+    }
+
+    // keep tenant safety
+    const ids = tasks.map(t => t.id);
+    const validTasks = await Task.find({ _id: { $in: ids }, tenantId }).select('_id');
+
+    const validSet = new Set(validTasks.map(t => String(t._id)));
+    const bulkOps = tasks
+      .filter(t => validSet.has(String(t.id)))
+      .map(t => ({
+        updateOne: {
+          filter: { _id: t.id, tenantId },
+          update: { $set: { order: t.order } },
+        }
+      }));
+
+    if (bulkOps.length === 0) {
+      return res.status(400).json({ status: false, message: "No tasks to update" });
+    }
+
+    await Task.bulkWrite(bulkOps);
+    res.status(200).json({ status: true, message: "Tasks reordered successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ status: false, message: error.message });
   }
 };

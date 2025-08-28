@@ -1,16 +1,17 @@
 // Table.jsx
-import React, { useState, Suspense } from "react";
+import React, { useEffect, useMemo, useState, Suspense } from "react";
 import { toast } from "sonner";
 import { BGS, TASK_TYPE, formatDate } from "../../utils";
 import clsx from "clsx";
 import UserInfo from "../UserInfo";
 import ConfirmatioDialog from "../Dialogs";
-import { useTrashTaskMutation, useUpdateTaskMutation } from "../../redux/slices/api/taskApiSlice";
+import { useTrashTaskMutation } from "../../redux/slices/api/taskApiSlice";
 import TaskDialog from "./TaskDialog";
 import { MdCheckBoxOutlineBlank, MdAccessTime, MdCheckCircle, MdDownload } from "react-icons/md";
 import { useSelector } from "react-redux";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
-// Dynamically import XLSX to avoid build issues in production
+// Dynamically import XLSX
 const XLSX = React.lazy(() => import("xlsx"));
 
 const ICONS1 = {
@@ -25,10 +26,68 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [taskStage, setTaskStage] = useState("");
+
   const [trashtask] = useTrashTaskMutation();
-  const [updateTask] = useUpdateTaskMutation();
   const { user } = useSelector((state) => state.auth);
-  const [open, setOpen] = useState(false);
+
+  // --- Local ordering state: sort by order asc, then _id desc
+  const sortedFromProps = useMemo(() => {
+    const clone = [...tasks];
+    clone.sort((a, b) => {
+      const ao = typeof a.order === "number" ? a.order : 0;
+      const bo = typeof b.order === "number" ? b.order : 0;
+      if (ao !== bo) return ao - bo;
+      // fallback stable-ish
+      return String(b._id).localeCompare(String(a._id));
+    });
+    return clone;
+  }, [tasks]);
+
+  const [taskList, setTaskList] = useState(sortedFromProps);
+
+  // keep in sync when parent gives fresh tasks (e.g., after refresh)
+  useEffect(() => {
+    setTaskList(sortedFromProps);
+  }, [sortedFromProps]);
+
+  const clearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+  };
+  const clearFilters1 = () => setTaskStage("");
+
+  const filteredTasks = useMemo(() => {
+    return taskList.filter((task) => {
+      const taskDate = new Date(task?.createdAt);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+      if (start && taskDate < start) return false;
+      if (end && taskDate > end) return false;
+      if (taskStage && task.stage !== taskStage) return false;
+      return true;
+    });
+  }, [taskList, startDate, endDate, taskStage]);
+
+  const downloadExcel = async () => {
+    try {
+      const excelData = filteredTasks.map((task, index) => ({
+        "S.No": index + 1,
+        "Task Title": task?.title || "No title",
+        "Assigned Date": formatDate(new Date(task?.createdAt)),
+        "Due Date": formatDate(new Date(task?.date)),
+        Team: task?.team?.map((member) => member.name).join(", "),
+        Status: task?.stage,
+      }));
+
+      const { utils, writeFile } = await import("xlsx");
+      const worksheet = utils.json_to_sheet(excelData);
+      const workbook = utils.book_new();
+      utils.book_append_sheet(workbook, worksheet, "Tasks");
+      writeFile(workbook, "task_list.xlsx");
+    } catch (error) {
+      console.error("Failed to generate Excel file:", error);
+    }
+  };
 
   const deleteHandler = async () => {
     try {
@@ -41,101 +100,131 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
     }
   };
 
-  const clearFilters = () => {
-    setStartDate("");
-    setEndDate("");
-  };
-
-  const clearFilters1 = () => {
-    setTaskStage("");
-  };
-
-  const filteredTasks = tasks.filter((task) => {
-    const taskDate = new Date(task?.createdAt);
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
-    if (start && taskDate < start) return false;
-    if (end && taskDate > end) return false;
-    if (taskStage && task.stage !== taskStage) return false;
-    return true;
-  });
-
-  const downloadExcel = async () => {
-    try {
-      const excelData = filteredTasks.map((task) => ({
-        "Task Title": task?.title || "No title",
-        "Assigned Date": formatDate(new Date(task?.createdAt)),
-        "Due Date": formatDate(new Date(task?.date)),
-        Team: task?.team?.map((member) => member.name).join(", "),
-        Status: task?.stage,
-      }));
-
-      const { utils, writeFile } = await import("xlsx");
-
-      const worksheet = utils.json_to_sheet(excelData);
-      const workbook = utils.book_new();
-      utils.book_append_sheet(workbook, worksheet, "Tasks");
-      writeFile(workbook, "task_list.xlsx");
-    } catch (error) {
-      console.error("Failed to generate Excel file:", error);
-    }
-  };
-
   const TableHeader = () => (
-    <thead className="w-full border-b border-gray-300">
-      <tr className="text-black text-left">
-        <th className="py-2">Task Title</th>
-        <th className="py-2">Assigned Date</th>
-        <th className="py-2">Due Date</th>
-        <th className="py-2">Team</th>
-        <th className="py-2">Status</th>
-        <th className="py-2 text-right">Actions</th>
+    <thead className="bg-[#229ea6] text-white">
+      <tr>
+        <th className="px-2 py-3 text-left w-8"></th>
+        <th className="px-2 py-3 text-left w-8">#</th>
+        <th className="px-4 py-3 text-left">Task Title</th>
+        <th className="px-4 py-3 text-left">Assigned Date</th>
+        <th className="px-4 py-3 text-left">Due Date</th>
+        <th className="px-4 py-3 text-left">Team</th>
+        <th className="px-4 py-3 text-left">Status</th>
+        <th className="px-4 py-3 text-right">Actions</th>
       </tr>
     </thead>
   );
 
-  const TableRow = ({ task }) => (
-    <tr className="border-b border-gray-200 text-gray-600 hover:bg-gray-300/10">
-      <td className="py-2">
-        <div className="flex items-center gap-2">
-          <div className={clsx("w-4 h-4 rounded-full", TASK_TYPE[task.stage] || "bg-gray-400")} />
-          <p className="line-clamp-2 text-base text-black">{task?.title || "No title"}</p>
-        </div>
-      </td>
-      <td className="py-2 text-sm text-gray-600">{formatDate(new Date(task?.createdAt))}</td>
-      <td className="py-2 text-sm text-gray-600">{formatDate(new Date(task?.date))}</td>
-      <td className="py-2">
-        <div className="flex">
-          {task?.team?.map((member, index) => (
-            <div
-              key={member._id || index}
-              className={clsx("w-7 h-7 rounded-full text-white flex items-center justify-center text-sm", BGS[index % BGS.length])}
-            >
-              <UserInfo user={member} />
+  const TableRow = ({ task, index }) => (
+    <Draggable draggableId={String(task._id)} index={index}>
+      {(provided) => (
+        <tr
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          className="border-b border-gray-200 text-gray-600 hover:bg-gray-300/10"
+        >
+
+          {/* Drag handle cell */}
+          <td className="py-2 px-2 cursor-grab select-none" {...provided.dragHandleProps} title="Drag to reorder">
+            ⋮⋮
+          </td>
+
+          {/* Serial number */}
+          <td className="py-2 px-2 text-sm text-gray-800">{index + 1}</td>
+
+          <td className="py-2">
+            <div className="flex items-center gap-2">
+              <div className={clsx("w-4 h-4 rounded-full", TASK_TYPE[task.stage] || "bg-gray-400")} />
+              <p className="line-clamp-2 text-base text-black">{task?.title || "No title"}</p>
             </div>
-          ))}
-        </div>
-      </td>
-      <td className="py-2">
-        <div className="flex gap-2 items-center">
-          <div
-            className={clsx(
-              "w-7 h-7 flex items-center justify-center rounded-full",
-              task.stage === "todo" ? "bg-blue-600" :
-              task.stage === "in progress" ? "bg-yellow-600" :
-              task.stage === "completed" ? "bg-green-600" : "bg-gray-400"
-            )}
-          >
-            <div className="text-white">{ICONS1[task.stage] || ICONS1["todo"]}</div>
-          </div>
-          <div><span className="text-sm text-gray-600 capitalize">{task.stage}</span></div>
-        </div>
-      </td>
-      <td className="py-2 flex gap-2 justify-end">
-        {user && <TaskDialog task={task} />}
-      </td>
-    </tr>
+          </td>
+          <td className="py-2 text-sm text-gray-600">{formatDate(new Date(task?.createdAt))}</td>
+          <td className="py-2 text-sm text-gray-600">{formatDate(new Date(task?.date))}</td>
+          <td className="py-2">
+            <div className="flex">
+              {task?.team?.map((member, idx) => (
+                <div
+                  key={member._id || idx}
+                  className={clsx(
+                    "w-7 h-7 rounded-full text-white flex items-center justify-center text-sm",
+                    BGS[idx % BGS.length]
+                  )}
+                >
+                  <UserInfo user={member} />
+                </div>
+              ))}
+            </div>
+          </td>
+          <td className="py-2">
+            <div className="flex gap-2 items-center">
+              <div
+                className={clsx(
+                  "w-7 h-7 flex items-center justify-center rounded-full",
+                  task.stage === "todo"
+                    ? "bg-blue-600"
+                    : task.stage === "in progress"
+                      ? "bg-yellow-600"
+                      : task.stage === "completed"
+                        ? "bg-green-600"
+                        : "bg-gray-400"
+                )}
+              >
+                <div className="text-white">{ICONS1[task.stage] || ICONS1["todo"]}</div>
+              </div>
+              <div>
+                <span className="text-sm text-gray-600 capitalize">{task.stage}</span>
+              </div>
+            </div>
+          </td>
+          <td className="py-2 flex gap-2 justify-end">{user && <TaskDialog task={task} />}</td>
+        </tr>
+      )}
+    </Draggable>
   );
+
+  // Helper to reorder the FULL list even when a filter is active
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    // Find the dragged item by its position in the FILTERED array
+    const sourceItem = filteredTasks[result.source.index];
+    const destItem = filteredTasks[result.destination.index];
+
+    // Map to indices in the FULL list
+    const sourceIndexInFull = taskList.findIndex(t => String(t._id) === String(sourceItem._id));
+    const destIndexInFull = taskList.findIndex(t => String(t._id) === String(destItem._id));
+
+    const newList = Array.from(taskList);
+    const [removed] = newList.splice(sourceIndexInFull, 1);
+
+    const insertIndex = destIndexInFull + (result.destination.index > result.source.index ? 1 : 0);
+    newList.splice(insertIndex, 0, removed);
+
+    const withOrder = newList.map((t, idx) => ({ ...t, order: idx }));
+
+    setTaskList(withOrder);
+
+    try {
+      const payload = withOrder.map((t) => ({ id: t._id, order: t.order }));
+      const resp = await fetch("/api/task/reorder", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tasks: payload }),
+      });
+      if (!resp.ok) throw new Error("Failed to save order");
+      toast.success("Order updated", {
+        style: {
+          backgroundColor: "#4caf50",
+          color: "#fff",
+          fontSize: "16px",
+          padding: "10px"
+        },
+      });
+    } catch (err) {
+      console.error("Failed to reorder tasks:", err);
+      toast.error("Could not save new order");
+    }
+  };
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
@@ -207,17 +296,28 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
           </div>
         )}
 
-        {/* Task Table */}
+        {/* Task Table with DnD */}
         <div className="overflow-x-auto">
           {filteredTasks.length > 0 ? (
-            <table className="w-full">
-              <TableHeader />
-              <tbody>
-                {filteredTasks.map((task) => (
-                  <TableRow key={task._id || task.title} task={task} />
-                ))}
-              </tbody>
-            </table>
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="taskTable">
+                {(provided) => (
+                  <table
+                    className="w-full border-collapse"
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                  >
+                    <TableHeader />
+                    <tbody>
+                      {filteredTasks.map((task, index) => (
+                        <TableRow key={task._id} task={task} index={index} />
+                      ))}
+                      {provided.placeholder}
+                    </tbody>
+                  </table>
+                )}
+              </Droppable>
+            </DragDropContext>
           ) : (
             <div className="text-center py-4 text-gray-500">No tasks found</div>
           )}

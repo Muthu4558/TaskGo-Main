@@ -241,7 +241,7 @@ const ProjectDetails = () => {
 
                 <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium">Filter by Stage:</label>
+                        <label className="text-sm font-medium">Status:</label>
                         <select value={filteredStage} onChange={(e) => setFilteredStage(e.target.value)} className="border rounded px-3 py-1">
                             <option value="all">All</option>
                             <option value="todo">To Do</option>
@@ -251,7 +251,7 @@ const ProjectDetails = () => {
                     </div>
 
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium">Search Task:</label>
+                        <label className="text-sm font-medium">Task:</label>
                         <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="border rounded px-3 py-1" placeholder="Search by title..." />
                     </div>
 
@@ -276,14 +276,14 @@ const ProjectDetails = () => {
                     <Droppable droppableId="project-tasks" isDropDisabled={!dragEnabled}>
                         {(provided) => (
                             <table className="w-full table-auto border-collapse">
-                                <thead className="bg-white/90 backdrop-blur sticky top-0 z-10">
+                                <thead className="bg-[#229ea6] text-white backdrop-blur sticky top-0 z-10">
                                     <tr>
                                         <th className="text-left px-4 py-3 border-b">#</th>
                                         <th className="text-left px-4 py-3 border-b">Task</th>
+                                        <th className="text-left px-4 py-3 border-b">Team</th>
                                         <th className="text-left px-4 py-3 border-b">Due Date</th>
                                         <th className="text-left px-4 py-3 border-b">Priority</th>
-                                        <th className="text-left px-4 py-3 border-b">Stage</th>
-                                        <th className="text-left px-4 py-3 border-b">Team</th>
+                                        <th className="text-left px-4 py-3 border-b">Status</th>
                                         <th className="text-left px-4 py-3 border-b">Actions</th>
                                     </tr>
                                 </thead>
@@ -313,12 +313,14 @@ const ProjectDetails = () => {
                                                                 </div>
                                                             </td>
 
-                                                            <td className="px-4 py-3 text-sm text-gray-700 max-w-[360px]">
+                                                            <td className="px-4 py-3 text-sm text-blue-700 max-w-[360px]">
                                                                 <div className="flex flex-col">
                                                                     <span className="font-medium break-words">{task.taskTitle}</span>
                                                                     {task.description && <small className="text-xs text-gray-400 truncate">{task.description}</small>}
                                                                 </div>
                                                             </td>
+
+                                                            <td className="px-4 py-3 text-sm text-gray-700 break-words">{(task.team || []).map(u => (u?.name || u)).join(', ')}</td>
 
                                                             <td className="px-4 py-3 text-sm text-gray-600">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : '—'}</td>
 
@@ -336,12 +338,10 @@ const ProjectDetails = () => {
                                                                 </select>
                                                             </td>
 
-                                                            <td className="px-4 py-3 text-sm text-gray-700 break-words">{(task.team || []).map(u => (u?.name || u)).join(', ')}</td>
-
                                                             <td className="px-4 py-3 text-sm whitespace-nowrap">
                                                                 <div className="flex items-center gap-2">
                                                                     <button onClick={() => handleEditTask(task)} className="text-black px-2 py-1 rounded-md hover:bg-blue-100" title="Edit"><FaEdit /></button>
-                                                                    <button onClick={() => handleDeleteConfirm(task)} className="text-black px-2 py-1 rounded-md hover:bg-red-100" title="Delete"><FaTrashAlt /></button>
+                                                                    <button onClick={() => handleDeleteConfirm(task)} className="text-red-600 px-2 py-1 rounded-md hover:bg-red-100" title="Delete"><FaTrashAlt /></button>
                                                                 </div>
                                                             </td>
                                                         </tr>

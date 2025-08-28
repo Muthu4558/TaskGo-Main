@@ -10,10 +10,14 @@ import {
   postTaskActivity,
   trashTask,
   updateTask,
+  bulkReorderTasks, // 👈 new
 } from "../controllers/taskControllers.js";
 import { isAdminRoute, protectRoute } from "../middlewares/authmiddlewave.js";
 
 const router = express.Router();
+
+// 👇 NEW bulk reorder
+router.put("/reorder", protectRoute, bulkReorderTasks);
 
 router.post("/create", protectRoute, createTask);
 router.post("/duplicate/:id", protectRoute, duplicateTask);
@@ -26,6 +30,7 @@ router.get("/:id", protectRoute, getTask);
 router.put("/create-subtask/:id", protectRoute, createSubTask);
 router.put("/update/:id", protectRoute, updateTask);
 router.put("/:id", protectRoute, isAdminRoute, trashTask);
+
 
 router.delete(
   "/delete-restore/:id?",
