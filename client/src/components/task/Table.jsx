@@ -207,7 +207,7 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
     try {
       const payload = withOrder.map((t) => ({ id: t._id, order: t.order }));
       const resp = await fetch("/api/task/reorder", {
-        method: "PUT",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tasks: payload }),
       });

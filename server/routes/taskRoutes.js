@@ -17,7 +17,7 @@ import { isAdminRoute, protectRoute } from "../middlewares/authmiddlewave.js";
 const router = express.Router();
 
 // 👇 NEW bulk reorder
-router.put("/reorder", protectRoute, bulkReorderTasks);
+router.post("/reorder", protectRoute, bulkReorderTasks);
 
 router.post("/create", protectRoute, createTask);
 router.post("/duplicate/:id", protectRoute, duplicateTask);
