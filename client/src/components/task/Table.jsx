@@ -206,12 +206,30 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
 
     try {
       const payload = withOrder.map((t) => ({ id: t._id, order: t.order }));
-      const resp = await fetch("https://dev.taskgo.in/api/task/reorder", {
+
+      // prefer POST (likely allowed on most hosting providers); fallback to PUT if server returns 405
+      const baseUrl = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_APP_BASE_URL) ? import.meta.env.VITE_APP_BASE_URL : "";
+      const url = `${baseUrl}/api/task/reorder`;
+
+      let resp = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tasks: payload }),
       });
-      if (!resp.ok) throw new Error("Failed to save order");
+
+      if (!resp.ok && resp.status === 405) {
+        // fallback to PUT for servers expecting it
+        resp = await fetch(url, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tasks: payload }),
+        });
+      }
+
+      if (!resp.ok) {
+        throw new Error(`Failed to save order: ${resp.status}`);
+      }
+
       toast.success("Order updated", {
         style: {
           backgroundColor: "#4caf50",
