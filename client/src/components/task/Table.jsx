@@ -206,7 +206,7 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
 
     try {
       const payload = withOrder.map((t) => ({ id: t._id, order: t.order }));
-      const resp = await fetch("/api/task/reorder", {
+      const resp = await fetch("https://dev.taskgo.in/api/task/reorder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tasks: payload }),

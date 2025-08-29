@@ -455,7 +455,7 @@ export const deleteRestoreTask = async (req, res) => {
 // 👇 NEW: bulk reorder (one call after DnD)
 export const bulkReorderTasks = async (req, res) => {
   try {
-    const { tasks } = req.body; // [{ id, order }]
+    const { tasks } = req.body; 
     const { tenantId } = req.user;
 
     if (!Array.isArray(tasks)) {
