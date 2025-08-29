@@ -208,8 +208,8 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
       const payload = withOrder.map((t) => ({ id: t._id, order: t.order }));
 
       // prefer POST (likely allowed on most hosting providers); fallback to PUT if server returns 405
-      const baseUrl = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_APP_BASE_URL) ? import.meta.env.VITE_APP_BASE_URL : "";
-      const url = `${baseUrl}/api/task/reorder`;
+      // const baseUrl = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_APP_BASE_URL) ? import.meta.env.VITE_APP_BASE_URL : "";
+      const url = "/api/task/reorder";
 
       let resp = await fetch(url, {
         method: "POST",
