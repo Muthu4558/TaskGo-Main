@@ -18,6 +18,7 @@ const router = express.Router();
 
 // 👇 NEW bulk reorder
 router.post("/reorder", protectRoute, bulkReorderTasks);
+router.put("/reorder", protectRoute, bulkReorderTasks);
 
 router.post("/create", protectRoute, createTask);
 router.post("/duplicate/:id", protectRoute, duplicateTask);
