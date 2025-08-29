@@ -452,40 +452,22 @@ export const deleteRestoreTask = async (req, res) => {
   }
 };
 
-// controllers/taskControllers.js (only the bulkReorderTasks export shown)
+// 👇 NEW: bulk reorder (one call after DnD)
 export const bulkReorderTasks = async (req, res) => {
   try {
-    // Accept many payload shapes for compatibility:
-    //  - { tasks: [{ id, order }, ...] }
-    //  - { reordered: [{ id, order }, ...] }
-    //  - [ { id, order }, ... ]
-    let tasksPayload = [];
+    const { tasks } = req.body; // [{ id, order }]
+    const { tenantId } = req.user;
 
-    if (Array.isArray(req.body)) {
-      tasksPayload = req.body;
-    } else if (Array.isArray(req.body.tasks)) {
-      tasksPayload = req.body.tasks;
-    } else if (Array.isArray(req.body.reordered)) {
-      tasksPayload = req.body.reordered;
-    } else if (Array.isArray(req.body.payload)) {
-      tasksPayload = req.body.payload;
-    }
-
-    if (!Array.isArray(tasksPayload) || tasksPayload.length === 0) {
-      return res.status(400).json({ status: false, message: "Invalid or empty payload" });
-    }
-
-    const { tenantId } = req.user || {};
-    if (!tenantId) {
-      return res.status(400).json({ status: false, message: "Tenant ID is required" });
+    if (!Array.isArray(tasks)) {
+      return res.status(400).json({ status: false, message: "Invalid payload" });
     }
 
     // keep tenant safety
-    const ids = tasksPayload.map(t => t.id);
+    const ids = tasks.map(t => t.id);
     const validTasks = await Task.find({ _id: { $in: ids }, tenantId }).select('_id');
-    const validSet = new Set(validTasks.map(t => String(t._id)));
 
-    const bulkOps = tasksPayload
+    const validSet = new Set(validTasks.map(t => String(t._id)));
+    const bulkOps = tasks
       .filter(t => validSet.has(String(t.id)))
       .map(t => ({
         updateOne: {
@@ -495,14 +477,13 @@ export const bulkReorderTasks = async (req, res) => {
       }));
 
     if (bulkOps.length === 0) {
-      return res.status(400).json({ status: false, message: "No tasks to update or tasks don't belong to your tenant" });
+      return res.status(400).json({ status: false, message: "No tasks to update" });
     }
 
     await Task.bulkWrite(bulkOps);
-
-    return res.status(200).json({ status: true, message: "Tasks reordered successfully" });
+    res.status(200).json({ status: true, message: "Tasks reordered successfully" });
   } catch (error) {
-    console.error("bulkReorderTasks error:", error);
-    return res.status(500).json({ status: false, message: error.message });
+    console.error(error);
+    res.status(500).json({ status: false, message: error.message });
   }
 };
