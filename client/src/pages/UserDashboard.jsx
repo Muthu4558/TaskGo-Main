@@ -38,11 +38,11 @@ const UserDashboard = () => {
     const handleStatusChange = async (taskId) => {
         try {
             await axios.patch(
-                `/api/project-details/${taskId}/status`,
+                `${import.meta.env.VITE_APP_BASE_URL}/api/project-details/${taskId}/status`,
                 { stage: newStatus },
                 {
                     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-                    // withCredentials: true,
+                    withCredentials: true,
                 }
             );
 
