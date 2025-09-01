@@ -160,28 +160,32 @@ const ProjectDetails = () => {
     const handleStageChange = async (taskId, newStage) => {
         try {
             const res = await axios.patch(
-                `${BASE}/api/project-details/${taskId}/status`,
+                `${import.meta.env.VITE_APP_BASE_URL}/api/project-details/${taskId}/status`,
                 { stage: newStage },
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                        "Content-Type": "application/json",
                     },
                     withCredentials: true,
                 }
             );
-            setProjectDetails((prev) => prev.map((t) => (t._id === taskId ? res.data : t)));
-            toast.success('Stage updated', {
+
+            setProjectDetails((prev) =>
+                prev.map((t) => (t._id === taskId ? res.data : t))
+            );
+
+            toast.success("Stage updated", {
                 style: {
                     backgroundColor: "#4caf50",
                     color: "#fff",
                     fontSize: "16px",
-                    padding: "10px"
+                    padding: "10px",
                 },
             });
         } catch (err) {
-            console.error('Error updating stage:', err);
-            toast.error('Failed to update stage');
+            console.error("Error updating stage:", err);
+            toast.error("Failed to update stage");
         }
     };
 
