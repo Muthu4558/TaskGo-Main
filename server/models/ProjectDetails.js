@@ -5,7 +5,7 @@ const projectDetailsSchema = new mongoose.Schema({
   taskTitle: { type: String, required: true },
   dueDate: { type: Date, required: true },
   priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
-  stage: { type: String, enum: ['todo', 'inprogress', 'completed'], default: 'todo' },
+  stage: { type: String, enum: ['todo', 'in progress', 'completed'], default: 'todo' },
   team: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   order: { type: Number, default: 0 },
 }, { timestamps: true });

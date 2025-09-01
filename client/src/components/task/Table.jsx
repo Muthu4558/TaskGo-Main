@@ -182,15 +182,12 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
     </Draggable>
   );
 
-  // Helper to reorder the FULL list even when a filter is active
   const handleDragEnd = async (result) => {
     if (!result.destination) return;
 
-    // Find the dragged item by its position in the FILTERED array
     const sourceItem = filteredTasks[result.source.index];
     const destItem = filteredTasks[result.destination.index];
 
-    // Map to indices in the FULL list
     const sourceIndexInFull = taskList.findIndex(t => String(t._id) === String(sourceItem._id));
     const destIndexInFull = taskList.findIndex(t => String(t._id) === String(destItem._id));
 
@@ -206,18 +203,26 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
 
     try {
       const payload = withOrder.map((t) => ({ id: t._id, order: t.order }));
-      const resp = await fetch("	https://server-dev.taskgo.in/api/task/reorder", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tasks: payload }),
-      });
+
+      // 👇 Use your env variable
+      const resp = await fetch(
+        `${import.meta.env.VITE_APP_BASE_URL}/api/task/reorder`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ tasks: payload }),
+        }
+      );
+
       if (!resp.ok) throw new Error("Failed to save order");
+
       toast.success("Order updated", {
         style: {
           backgroundColor: "#4caf50",
           color: "#fff",
           fontSize: "16px",
-          padding: "10px"
+          padding: "10px",
         },
       });
     } catch (err) {
@@ -225,6 +230,7 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
       toast.error("Could not save new order");
     }
   };
+
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
