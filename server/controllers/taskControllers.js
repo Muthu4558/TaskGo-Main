@@ -73,14 +73,15 @@ const sendEmail = async (to, subject, text, htmlContent) => {
   }
 };
 
+// replace createTask with this
 export const createTask = async (req, res) => {
   try {
     const { userId, tenantId } = req.user;
     const { title, description, team, stage, date, priority, assets } = req.body;
 
-    // 👇 compute next order for this tenant
-    const maxOrderDoc = await Task.findOne({ tenantId }).sort({ order: -1 }).select('order');
-    const nextOrder = maxOrderDoc ? maxOrderDoc.order + 1 : 0;
+    // 👇 compute next order so that newly created task appears FIRST (smallest order)
+    const minOrderDoc = await Task.findOne({ tenantId }).sort({ order: 1 }).select('order');
+    const nextOrder = typeof minOrderDoc?.order === 'number' ? minOrderDoc.order - 1 : 0;
 
     let text = "New task has been assigned to you";
     if (team?.length > 1) {
@@ -100,7 +101,7 @@ export const createTask = async (req, res) => {
       assets,
       activities: [activity],
       tenantId,
-      order: nextOrder, // 👈 set persisted order
+      order: nextOrder, // 👈 set persisted order so it shows first
     });
 
     // Notify each team member
@@ -131,6 +132,7 @@ export const createTask = async (req, res) => {
   }
 };
 
+// replace duplicateTask with this
 export const duplicateTask = async (req, res) => {
   try {
     const { id } = req.params;
@@ -141,8 +143,9 @@ export const duplicateTask = async (req, res) => {
       return res.status(404).json({ status: false, message: "Task not found" });
     }
 
-    const maxOrderDoc = await Task.findOne({ tenantId }).sort({ order: -1 }).select('order');
-    const nextOrder = maxOrderDoc ? maxOrderDoc.order + 1 : 0;
+    // Make the duplicated task appear first by assigning an order smaller than any existing
+    const minOrderDoc = await Task.findOne({ tenantId }).sort({ order: 1 }).select('order');
+    const nextOrder = typeof minOrderDoc?.order === 'number' ? minOrderDoc.order - 1 : 0;
 
     await Task.create({
       ...task.toObject(),
