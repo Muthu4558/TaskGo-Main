@@ -10,6 +10,8 @@ import TaskDialog from "./TaskDialog";
 import { MdCheckBoxOutlineBlank, MdAccessTime, MdCheckCircle, MdDownload } from "react-icons/md";
 import { useSelector } from "react-redux";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { FaBell } from "react-icons/fa";
+import { ImSpinner2 } from "react-icons/im";
 
 // Dynamically import XLSX
 const XLSX = React.lazy(() => import("xlsx"));
@@ -26,6 +28,7 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [taskStage, setTaskStage] = useState("");
+  const [reminderLoading, setReminderLoading] = useState(null);
 
   const [trashtask] = useTrashTaskMutation();
   const { user } = useSelector((state) => state.auth);
@@ -100,6 +103,26 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
     }
   };
 
+  const handleSendReminder = async (taskId) => {
+    try {
+      setReminderLoading(taskId);
+      const resp = await fetch(`${import.meta.env.VITE_APP_BASE_URL}/api/task/${taskId}/reminder`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.message || "Failed to send reminder");
+
+      toast.success("Reminder sent successfully");
+    } catch (err) {
+      console.error("Reminder error:", err);
+      toast.error("Failed to send reminder");
+    } finally {
+      setReminderLoading(null);
+    }
+  };
+
+
   const TableHeader = () => (
     <thead className="bg-[#229ea6] text-white">
       <tr>
@@ -111,6 +134,7 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
         <th className="px-4 py-3 text-left">Team</th>
         <th className="px-4 py-3 text-left">Status</th>
         <th className="px-4 py-3 text-right">Actions</th>
+        {/* <th className="px-4 py-3 text-right">Reminder</th> */}
       </tr>
     </thead>
   );
@@ -176,7 +200,25 @@ const Table = ({ tasks = [], showFiltersAndActions = true }) => {
               </div>
             </div>
           </td>
-          <td className="py-2 flex gap-2 justify-end">{user && <TaskDialog task={task} />}</td>
+          <td className="py-2 flex gap-2 justify-end">
+            {user && <TaskDialog task={task} />}
+            <button
+              onClick={() => handleSendReminder(task._id)}
+              disabled={reminderLoading === task._id}
+              className={`flex items-center justify-end px-2 py-1 rounded-md 
+      ${reminderLoading === task._id
+                  ? "bg-purple-100 text-purple-400"
+                  : "bg-purple-50 text-purple-600 hover:bg-purple-100"}`}
+              title={reminderLoading === task._id ? "Sending..." : "Send Reminder"}
+            >
+              {reminderLoading === task._id ? (
+                <ImSpinner2 className="animate-spin" />
+              ) : (
+                <FaBell />
+              )}
+            </button>
+          </td>
+
         </tr>
       )}
     </Draggable>

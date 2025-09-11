@@ -14,7 +14,8 @@ import {
   updateUserProfile,
   sendOTP,
   verifyOTP,
-  resetPassword
+  resetPassword,
+  bulkRegisterUsers
 } from "../controllers/userControllers.js";
 
 const router = express.Router();
@@ -25,6 +26,7 @@ router.post("/logout", logoutUser);
 router.post("/forgot-password", sendOTP);
 router.post("/verify-otp", verifyOTP);
 router.post("/reset-password", resetPassword);
+router.post("/bulk-upload", protectRoute, bulkRegisterUsers);
 
 router.get("/admin", protectRoute, getAdmin)
 router.get("/get-team", protectRoute, getTeamList);

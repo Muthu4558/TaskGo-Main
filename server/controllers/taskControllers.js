@@ -490,3 +490,47 @@ export const bulkReorderTasks = async (req, res) => {
     res.status(500).json({ status: false, message: error.message });
   }
 };
+
+// controllers/taskController.js
+export const sendTaskReminder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tenantId } = req.user;
+
+    const task = await Task.findOne({ _id: id, tenantId }).populate("team");
+    if (!task) {
+      return res.status(404).json({ status: false, message: "Task not found" });
+    }
+
+    for (const user of task.team) {
+      const subject = `⏰ Task Reminder - TaskGo, Task "${task.title}" is pending`;
+
+      const text = `Hello ${user.name || "Team Member"},\n\nThis is a reminder for the task "${task.title}".\nDue date: ${new Date(
+        task.date
+      ).toDateString()}.`;
+
+      const htmlContent = `
+        <p>Hello <b>${user.name || "Team Member"}</b>,</p>
+        <p>This is a reminder for the task <b>${task.title}</b>.</p>
+        <p><b>Due Date:</b> ${new Date(task.date).toDateString()}</p>
+      `;
+
+      if (user.email) {
+        await sendEmail(user.email, subject, text, htmlContent);
+      }
+
+      if (user.phone) {
+        await sendWhatsAppTemplate(user.phone, "taskgo_reminder", [
+          user.name,
+          task.title,
+          new Date(task.date).toDateString(),
+        ]);
+      }
+    }
+
+    res.status(200).json({ status: true, message: "Reminder sent successfully" });
+  } catch (error) {
+    console.error("Error sending reminder:", error);
+    res.status(500).json({ status: false, message: error.message });
+  }
+};

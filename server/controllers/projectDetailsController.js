@@ -104,7 +104,7 @@ export const createProjectDetail = async (req, res) => {
          <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString()}</p>
          <p><strong>Priority:</strong> ${priority}</p>
          <p><strong>Stage:</strong> ${stage}</p>
-         <p>Please login to <a href="https://taskgo.in">TaskGo</a> to view your task.</p>`
+         <p>Please login to <a href="https://taskgo.in/userproject">TaskGo</a> to view your task.</p>`
       );
 
       // whatsapp template (optional)
@@ -273,5 +273,48 @@ export const reorderProjectDetails = async (req, res) => {
   } catch (err) {
     console.error('Error reordering tasks:', err);
     res.status(500).json({ message: 'Failed to reorder tasks' });
+  }
+};
+
+// controllers/projectDetails.js
+export const sendTaskReminder = async (req, res) => {
+  try {
+    const { id } = req.params; // task id
+    const task = await ProjectDetail.findById(id).populate('team', 'email name phone');
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    // notify each assigned user
+    for (const user of task.team) {
+      // Email
+      await sendEmail(
+        user.email,
+        '⏰ Task Reminder - TaskGo',
+        `Hi ${user.name},\n\nReminder: The task "${task.taskTitle}" is due on ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}.`,
+        `<p>Hi <strong>${user.name}</strong>,</p>
+         <p>This is a reminder for your task: <strong>${task.taskTitle}</strong>.</p>
+         <p><strong>Due Date:</strong> ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A'}</p>
+         <p><strong>Priority:</strong> ${task.priority}</p>
+         <p><strong>Status:</strong> ${task.stage}</p>
+         <p>Please login to <a href="https://taskgo.in/userproject">TaskGo</a> for details.</p>`
+      );
+
+      // WhatsApp
+      if (user.phone) {
+        await sendWhatsAppTemplate(user.phone, 'taskgo_reminder', [
+          user.name,
+          task.taskTitle,
+          task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'N/A',
+          task.priority,
+          task.stage,
+        ]);
+      }
+    }
+
+    res.json({ message: 'Reminder sent successfully' });
+  } catch (err) {
+    console.error('❌ Error sending reminder:', err);
+    res.status(500).json({ message: 'Failed to send reminder' });
   }
 };

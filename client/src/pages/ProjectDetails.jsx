@@ -7,6 +7,8 @@ import { MdDragIndicator } from 'react-icons/md';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import UserList from '../components/task/UserList';
 import { toast, Toaster } from 'sonner';
+import { FaBell } from 'react-icons/fa';
+import { ImSpinner2 } from 'react-icons/im';
 
 const reorder = (list, startIndex, endIndex) => {
     const result = Array.from(list);
@@ -27,6 +29,7 @@ const ProjectDetails = () => {
     const [dueDateFilter, setDueDateFilter] = useState('');
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [editTask, setEditTask] = useState(null);
+    const [reminderLoading, setReminderLoading] = useState(null);
 
     // delete confirmation state
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -153,6 +156,29 @@ const ProjectDetails = () => {
         } catch (err) {
             console.error('Error updating task:', err);
             toast.error('Failed to update task');
+        }
+    };
+
+    const handleSendReminder = async (taskId) => {
+        try {
+            setReminderLoading(taskId); // start loading
+            await axios.post(`${BASE}/api/project-details/${taskId}/reminder`, {}, {
+                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+                withCredentials: true,
+            });
+            toast.success('Reminder sent successfully', {
+                style: {
+                    backgroundColor: "#4caf50",
+                    color: "#fff",
+                    fontSize: "16px",
+                    padding: "10px"
+                },
+            });
+        } catch (err) {
+            console.error('Error sending reminder:', err);
+            toast.error('Failed to send reminder');
+        } finally {
+            setReminderLoading(null); // stop loading
         }
     };
 
@@ -342,8 +368,21 @@ const ProjectDetails = () => {
                                                                 <div className="flex items-center gap-2">
                                                                     <button onClick={() => handleEditTask(task)} className="text-black px-2 py-1 rounded-md hover:bg-blue-100" title="Edit"><FaEdit /></button>
                                                                     <button onClick={() => handleDeleteConfirm(task)} className="text-red-600 px-2 py-1 rounded-md hover:bg-red-100" title="Delete"><FaTrashAlt /></button>
+                                                                    <button
+                                                                        onClick={() => handleSendReminder(task._id)}
+                                                                        disabled={reminderLoading === task._id}
+                                                                        className={`flex items-center gap-2 px-2 py-1 rounded-md 
+      ${reminderLoading === task._id ? 'bg-purple-100 text-purple-400' : 'bg-purple-50 text-purple-600 hover:bg-purple-100'}`}
+                                                                    >
+                                                                        {reminderLoading === task._id ? (
+                                                                            <ImSpinner2 className="animate-spin" />
+                                                                        ) : (
+                                                                            <FaBell />
+                                                                        )}
+                                                                    </button>
                                                                 </div>
                                                             </td>
+
                                                         </tr>
                                                     )}
                                                 </Draggable>

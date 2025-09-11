@@ -7,13 +7,18 @@ import { getInitials } from "../utils";
 import clsx from "clsx";
 import ConfirmatioDialog, { UserAction } from "../components/Dialogs";
 import AddUser from "../components/AddUser";
-import { useDeleteUserMutation, useGetTeamListQuery, useUserActionMutation } from "../redux/slices/api/userApiSlice";
+import {
+  useDeleteUserMutation,
+  useGetTeamListQuery,
+  useUserActionMutation,
+} from "../redux/slices/api/userApiSlice";
 import { toast } from "sonner";
 import { MdOutlineSearch } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import { BiEditAlt } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
-import { MdDelete } from "react-icons/md"
+import { MdDelete } from "react-icons/md";
+import * as XLSX from "xlsx";
 import { useEffect } from "react";
 
 const Users = () => {
@@ -26,6 +31,8 @@ const Users = () => {
   const [selected, setSelected] = useState(null);
   const [detailsPopup, setDetailsPopup] = useState({ open: false, details: null });
 
+  const [uploading, setUploading] = useState(false); // ✅ Added loading state
+
   const { data, isLoading, refetch } = useGetTeamListQuery();
   const [deleteUser] = useDeleteUserMutation();
   const [userAction] = useUserActionMutation();
@@ -33,14 +40,83 @@ const Users = () => {
   const handleSearch = () => {
     if (!data) return [];
 
-    let filteredUsers = data.filter(user => user._id !== "67b03acd1829681ccea1c774");
+    let filteredUsers = data.filter((user) => user._id !== "67b03acd1829681ccea1c774");
     if (!searchQuery) return filteredUsers;
 
     const lowerCaseQuery = searchQuery.toLowerCase();
-    return filteredUsers.filter(user => user.name.toLowerCase().includes(lowerCaseQuery));
+    return filteredUsers.filter((user) =>
+      user.name.toLowerCase().includes(lowerCaseQuery)
+    );
   };
 
   const filteredData = handleSearch();
+
+  const downloadSampleFile = () => {
+    const sampleData = [
+      {
+        "Full Name": "John Doe",
+        "Phone Number": "9876543210",
+        Department: "IT",
+        Role: "Developer",
+        "Email Address": "johndoe@example.com",
+      },
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(sampleData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "SampleUsers");
+    XLSX.writeFile(workbook, "UserUploadTemplate.xlsx");
+  };
+
+  const handleExcelUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true); // ✅ Start loading
+
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Reader = new FileReader();
+      base64Reader.onload = async () => {
+        const base64File = base64Reader.result.split(",")[1];
+
+        try {
+          const res = await fetch("/api/user/bulk-upload", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ fileData: base64File }),
+          });
+
+          const result = await res.json();
+          if (result.status) {
+            toast.success(`Uploaded ${result.created} users successfully!`, {
+              style: {
+                backgroundColor: "#4caf50",
+                color: "#fff",
+                fontSize: "16px",
+                padding: "10px",
+              },
+            });
+            refetch();
+          } else {
+            toast.error(result.message);
+          }
+        } catch (err) {
+          console.error(err);
+          toast.error("Bulk upload failed");
+        } finally {
+          setUploading(false); // ✅ Stop loading
+          e.target.value = ""; // reset input so user can upload same file again if needed
+        }
+      };
+
+      base64Reader.readAsDataURL(file);
+    };
+
+    reader.readAsBinaryString(file);
+  };
 
   const userActionHandler = async () => {
     if (!user?.isAdmin) {
@@ -169,7 +245,6 @@ const Users = () => {
       return;
     }
 
-    // Admins can view the report
     navigate(`/users/${selectedUserId}/reports`);
   };
 
@@ -193,7 +268,7 @@ const Users = () => {
 
   const handleViewProjectTasks = async (e, selectedUserId) => {
     e.stopPropagation();
-  
+
     if (!user?.isAdmin) {
       toast.error("Only admins can view user project tasks.", {
         style: {
@@ -205,13 +280,11 @@ const Users = () => {
       });
       return;
     }
-  
-    // Fetch the project tasks
-    const response = await fetch(`/api/project-details/${selectedUserId}`); // Adjust your API route accordingly
+
+    const response = await fetch(`/api/project-details/${selectedUserId}`);
     const data = await response.json();
-  
+
     if (data.message) {
-      // Handle case when no tasks are found
       toast.error(data.message, {
         style: {
           backgroundColor: "#f44336",
@@ -222,10 +295,8 @@ const Users = () => {
       });
       return;
     }
-  
-    // Proceed with displaying the tasks if they exist
+
     navigate(`/users/${selectedUserId}/project-tasks`);
-    // console.log("User Data", data);
   };
 
   const handleDetailsClick = (e, details) => {
@@ -246,137 +317,149 @@ const Users = () => {
     </thead>
   );
 
-  const TableRow = ({ user }) => {
-
-    return (
-      <tr
-        className="border-b border-gray-200 text-gray-600 hover:bg-gray-400/10 cursor-pointer"
-      >
-        <td className="p-2">
-          <div className="flex items-center gap-3 text-blue-600">
-            <div className="w-9 h-9 rounded-full text-white flex items-center justify-center text-sm bg-[#229ea6]">
-              <span className="text-xs md:text-sm text-center">
-                {getInitials(user.name)}
-              </span>
-
-            </div>
-            {user.name}
+  const TableRow = ({ user }) => (
+    <tr className="border-b border-gray-200 text-gray-600 hover:bg-gray-400/10 cursor-pointer">
+      <td className="p-2">
+        <div className="flex items-center gap-3 text-blue-600">
+          <div className="w-9 h-9 rounded-full text-white flex items-center justify-center text-sm bg-[#229ea6]">
+            <span className="text-xs md:text-sm text-center">
+              {getInitials(user.name)}
+            </span>
           </div>
-        </td>
+          {user.name}
+        </div>
+      </td>
 
-        <td>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              userStatusClick(user);
-            }}
-            className={clsx(
-              "w-fit px-4 py-1 rounded-full",
-              user?.isActive ? "bg-blue-200" : "bg-yellow-100"
-            )}
-          >
-            {user?.isActive ? "Active" : "Disabled"}
-          </button>
-        </td>
-
-        <td className="p-2">
-          <Button
-            className="text-black hover:text-blue-500 font-semibold sm:px-0"
-            label="User Detail"
-            type="button"
-            onClick={(e) => handleDetailsClick(e, user)}
-          />
-        </td>
-
-        <td className="p-2">
-          <Button
-            className="text-black hover:text-blue-500 font-semibold sm:px-0"
-            label="Daily Task"
-            type="button"
-            onClick={(e) => handleViewClicks(e, user._id)}
-          />
-        </td>
-
-        <td className="p-2">
-          <Button
-            className="text-black hover:text-blue-500 font-semibold sm:px-0"
-            label="Project Task"
-            type="button"
-            onClick={(e) => handleViewProjectTasks(e, user._id)}
-          />
-        </td>
-
-        <td className="p-2 flex gap-4 justify-end">
-          {user && (
-            <>
-              <button
-                className="text-blue-600 hover:text-blue-500"
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  editClick(user);
-                }}
-              >
-                <BiEditAlt size={20} />
-              </button>
-              <button
-                className="text-green-600 hover:text-green-500"
-                type="button"
-                onClick={(e) => handleViewClick(e, user._id)}
-              >
-                <FaEye size={20} />
-              </button>
-              <button
-                className="text-red-700 hover:text-red-500"
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteClick(user?._id);
-                }}
-              >
-                <MdDelete size={20} />
-              </button>
-            </>
+      <td>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            userStatusClick(user);
+          }}
+          className={clsx(
+            "w-fit px-4 py-1 rounded-full",
+            user?.isActive ? "bg-blue-200" : "bg-yellow-100"
           )}
-        </td>
-      </tr>
-    );
-  };
+        >
+          {user?.isActive ? "Active" : "Disabled"}
+        </button>
+      </td>
+
+      <td className="p-2">
+        <Button
+          className="text-black hover:text-blue-500 font-semibold sm:px-0"
+          label="User Detail"
+          type="button"
+          onClick={(e) => handleDetailsClick(e, user)}
+        />
+      </td>
+
+      <td className="p-2">
+        <Button
+          className="text-black hover:text-blue-500 font-semibold sm:px-0"
+          label="Daily Task"
+          type="button"
+          onClick={(e) => handleViewClicks(e, user._id)}
+        />
+      </td>
+
+      <td className="p-2">
+        <Button
+          className="text-black hover:text-blue-500 font-semibold sm:px-0"
+          label="Project Task"
+          type="button"
+          onClick={(e) => handleViewProjectTasks(e, user._id)}
+        />
+      </td>
+
+      <td className="p-2 flex gap-4 justify-end">
+        {user && (
+          <>
+            <button
+              className="text-blue-600 hover:text-blue-500"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                editClick(user);
+              }}
+            >
+              <BiEditAlt size={20} />
+            </button>
+            <button
+              className="text-green-600 hover:text-green-500"
+              type="button"
+              onClick={(e) => handleViewClick(e, user._id)}
+            >
+              <FaEye size={20} />
+            </button>
+            <button
+              className="text-red-700 hover:text-red-500"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteClick(user?._id);
+              }}
+            >
+              <MdDelete size={20} />
+            </button>
+          </>
+        )}
+      </td>
+    </tr>
+  );
 
   return (
     <>
       <div className="w-full md:px-1 px-0 mb-6">
-
-        <div className="flex items-center justify-between mb-8">
-          <Title title="Team Members" />
-          {user?.isAdmin && (
-            <Button
-              label="Add New User"
-              icon={<IoMdAdd className="text-lg" />}
-              className="flex flex-row-reverse gap-1 items-center bg-[#229ea6] text-white rounded-md 2xl:py-2.5"
-              onClick={() => setOpen(true)}
-            />
-          )}
+        <div className="flex justify-end gap-4 mb-5">
+          <Button
+            label="Download Sample"
+            className="flex flex-row-reverse gap-1 items-center bg-[#229ea6] text-white rounded-md 2xl:py-2.5"
+            onClick={downloadSampleFile}
+            disabled={uploading}
+          />
+          <Button
+            label={uploading ? "Uploading..." : "Upload Excel"}
+            className={`flex flex-row-reverse gap-1 items-center rounded-md 2xl:py-2.5 ${
+              uploading ? "bg-gray-400 cursor-not-allowed" : "bg-[#229ea6] text-white"
+            }`}
+            onClick={() => !uploading && document.getElementById("excelInput").click()}
+            disabled={uploading}
+          />
+          <input
+            type="file"
+            id="excelInput"
+            accept=".xlsx, .xls"
+            className="hidden"
+            onChange={handleExcelUpload}
+            disabled={uploading}
+          />
+          <Button
+            label="Add New User"
+            icon={<IoMdAdd className="text-lg" />}
+            className="flex flex-row-reverse gap-1 items-center bg-[#229ea6] text-white rounded-md 2xl:py-2.5"
+            onClick={() => setOpen(true)}
+            disabled={uploading}
+          />
         </div>
 
         {/* Search Bar */}
         <div className="flex justify-between">
-          <div className='w-64 2xl:w-[400px] flex items-center py-2 px-3 gap-2 rounded-full bg-white mb-3'>
-            <MdOutlineSearch className='text-gray-500 text-xl' />
-
+          <div className="w-64 2xl:w-[400px] flex items-center py-2 px-3 gap-2 rounded-full bg-white mb-3">
+            <MdOutlineSearch className="text-gray-500 text-xl" />
             <input
-              type='text'
-              placeholder='Search....'
-              className='flex-1 outline-none bg-white placeholder:text-gray-500 text-gray-800'
+              type="text"
+              placeholder="Search...."
+              className="flex-1 outline-none bg-white placeholder:text-gray-500 text-gray-800"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              disabled={uploading}
             />
           </div>
           {user.isAdmin && (
             <div>
               <h1 className="font-bold text-2xl">
-                User Limit :
-                <span className="text-[#229ea6]"> {user.userLimit}</span>
+                User Limit :<span className="text-[#229ea6]"> {user.userLimit}</span>
               </h1>
             </div>
           )}
@@ -388,9 +471,7 @@ const Users = () => {
               <TableHeader />
               <tbody>
                 {filteredData.length > 0 ? (
-                  filteredData.map((user, index) => (
-                    <TableRow key={index} user={user} />
-                  ))
+                  filteredData.map((user, index) => <TableRow key={index} user={user} />)
                 ) : (
                   <tr>
                     <td colSpan="6" className="text-center py-4 text-gray-500">
@@ -422,16 +503,30 @@ const Users = () => {
         setOpen={setOpenAction}
         onClick={userActionHandler}
       />
+
       {detailsPopup.open && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300 z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl w-96 max-w-full transform scale-95 transition-all duration-300 hover:scale-100">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">User Details</h2>
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+              User Details
+            </h2>
             <div className="space-y-2 text-gray-600">
-              <p><strong>Name:</strong> {detailsPopup.details?.name || "N/A"}</p>
-              <p><strong>Department:</strong> {detailsPopup.details?.title || "N/A"}</p>
-              <p><strong>Role:</strong> {detailsPopup.details?.role || "N/A"}</p>
-              <p><strong>Email:</strong> {detailsPopup.details?.email || "N/A"}</p>
-              <p><strong>Phone Number:</strong> {detailsPopup.details?.phone || "N/A"}</p>
+              <p>
+                <strong>Name:</strong> {detailsPopup.details?.name || "N/A"}
+              </p>
+              <p>
+                <strong>Department:</strong> {detailsPopup.details?.title || "N/A"}
+              </p>
+              <p>
+                <strong>Role:</strong> {detailsPopup.details?.role || "N/A"}
+              </p>
+              <p>
+                <strong>Email:</strong> {detailsPopup.details?.email || "N/A"}
+              </p>
+              <p>
+                <strong>Phone Number:</strong>{" "}
+                {detailsPopup.details?.phone || "N/A"}
+              </p>
             </div>
             <Button
               label="Close"
@@ -441,7 +536,6 @@ const Users = () => {
           </div>
         </div>
       )}
-
     </>
   );
 };

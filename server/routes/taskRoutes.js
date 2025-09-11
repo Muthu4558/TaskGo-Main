@@ -10,7 +10,8 @@ import {
   postTaskActivity,
   trashTask,
   updateTask,
-  bulkReorderTasks, // 👈 new
+  bulkReorderTasks,
+  sendTaskReminder 
 } from "../controllers/taskControllers.js";
 import { isAdminRoute, protectRoute } from "../middlewares/authmiddlewave.js";
 
@@ -22,6 +23,7 @@ router.put("/reorder", protectRoute, bulkReorderTasks);
 router.post("/create", protectRoute, createTask);
 router.post("/duplicate/:id", protectRoute, duplicateTask);
 router.post("/activity/:id", protectRoute, postTaskActivity);
+router.post("/:id/reminder", protectRoute, sendTaskReminder);
 
 router.get("/dashboard", protectRoute, dashboardStatistics);
 router.get("/", protectRoute, getTasks);

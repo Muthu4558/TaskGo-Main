@@ -8,6 +8,7 @@ import {
   editProjectDetail,
   getProjectDetailsByUser,
   reorderProjectDetails,
+  sendTaskReminder
 } from '../controllers/projectDetailsController.js';
 import { protectRoute } from '../middlewares/authmiddlewave.js';
 
@@ -15,6 +16,7 @@ const router = express.Router();
 
 // Specific routes first
 router.post('/', protectRoute, createProjectDetail);
+router.post('/:id/reminder', protectRoute, sendTaskReminder);
 
 router.get('/user/assigned/all', protectRoute, getProjectDetailsAssignedToUser);
 router.get('/user/:userId', protectRoute, getProjectDetailsByUser);

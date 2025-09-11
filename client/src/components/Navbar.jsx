@@ -39,7 +39,8 @@ const Navbar = () => {
           </button>
           <UserAvatar />
           <h1 className="text-black font-medium">
-            {user.isAdmin ? "Admin" : "User"}
+            <span className="block text-[#229ea6] font-bold">{user.name}</span>
+            <span>{user.isAdmin ? "Admin" : "User"}</span>
           </h1>
         </div>
       </div>

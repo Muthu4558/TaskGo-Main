@@ -1,3 +1,4 @@
+import * as XLSX from "xlsx";
 import User from "../models/user.js";
 import Task from "../models/task.js";
 import OTPStore from "../models/otpStore.js";
@@ -217,6 +218,109 @@ export const registerUser = async (req, res) => {
   } catch (error) {
     console.error("❌ Error in registerUser:", error);
     return res.status(500).json({ status: false, message: error.message });
+  }
+};
+
+export const bulkRegisterUsers = async (req, res) => {
+  try {
+    const { fileData } = req.body;
+    if (!fileData) {
+      return res.status(400).json({
+        status: false,
+        message: "No file data provided",
+      });
+    }
+
+    // Decode base64 into buffer
+    const buffer = Buffer.from(fileData, "base64");
+    const workbook = XLSX.read(buffer, { type: "buffer" });
+
+    const sheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+    if (!jsonData.length) {
+      return res.status(400).json({
+        status: false,
+        message: "Excel file is empty",
+      });
+    }
+
+    let createdUsers = [];
+    let errors = [];
+
+    for (let row of jsonData) {
+      // Support flexible column names
+      const name = row["Full Name"] || row["Name"];
+      const phone = row["Phone Number"] || row["Phone"];
+      const Department = row["Department"];
+      const Role = row["Role"];
+      const email = row["Email Address"] || row["Email"];
+
+      if (!name || !phone || !Department || !Role || !email) {
+        errors.push({ row, error: "Missing required fields" });
+        continue;
+      }
+
+      const existUser = await User.findOne({ email });
+      if (existUser) {
+        errors.push({ row, error: "User already exists" });
+        continue;
+      }
+
+      const tenantId = req.user?.tenantId || uuidv4();
+      const password = email; // Default password = email
+
+      const newUser = await User.create({
+        name,
+        phone,
+        title: Department,
+        role: Role,
+        email,
+        password,
+        tenantId,
+        isAdmin: false,
+      });
+
+      createdUsers.push(newUser);
+
+      // Send welcome email
+      try {
+        await sendEmail(
+          email,
+          "Welcome to Nizcare Task Management",
+          `Your account has been created. Email: ${email}, Password: ${password}`,
+          `<h3>Welcome ${name},</h3><p>Email: <b>${email}</b><br>Password: <b>${password}</b></p>`
+        );
+      } catch (err) {
+        console.error(`❌ Email sending failed for ${email}:`, err.message);
+      }
+
+      // Send WhatsApp message
+      try {
+        await sendWhatsAppTemplate(phone, "taskgo_test5", [
+          name,
+          email,
+          password,
+          "https://taskgo.in/",
+        ]);
+      } catch (err) {
+        console.error(`❌ WhatsApp sending failed for ${phone}:`, err.message);
+      }
+    }
+
+    return res.status(201).json({
+      status: true,
+      message: "Bulk user upload completed",
+      created: createdUsers.length,
+      errors,
+    });
+  } catch (error) {
+    console.error("❌ Error in bulkRegisterUsers:", error);
+    return res.status(500).json({
+      status: false,
+      message: error.message,
+    });
   }
 };
 
