@@ -81,7 +81,7 @@ const Users = () => {
         const base64File = base64Reader.result.split(",")[1];
 
         try {
-          const res = await fetch("/api/user/bulk-upload", {
+          const res = await fetch(`${import.meta.env.VITE_APP_BASE_URL}/api/user/bulk-upload`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
