@@ -19,6 +19,7 @@ import { BiEditAlt } from "react-icons/bi";
 import { FaEye } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
 import * as XLSX from "xlsx";
+import { jwtDecode } from "jwt-decode";
 import { useEffect } from "react";
 
 const Users = () => {
@@ -72,7 +73,7 @@ const Users = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    setUploading(true); // ✅ Start loading
+    setUploading(true);
 
     const reader = new FileReader();
     reader.onload = async () => {
@@ -81,15 +82,49 @@ const Users = () => {
         const base64File = base64Reader.result.split(",")[1];
 
         try {
-          const res = await fetch(`${import.meta.env.VITE_APP_BASE_URL}/api/user/bulk-upload`, {
+          const apiBaseUrl = import.meta.env.VITE_APP_BASE_URL || "";
+          let token = localStorage.getItem("token");
+
+          // ✅ Debug & validate token (if using Authorization header)
+          if (token) {
+            try {
+              const decoded = jwtDecode(token);
+              if (decoded.exp * 1000 < Date.now()) {
+                console.warn("Token expired.");
+                toast.error("Session expired. Please log in again.");
+                setUploading(false);
+                return;
+              }
+            } catch (err) {
+              console.error("Invalid token format:", err);
+              toast.error("Authentication error. Please log in again.");
+              setUploading(false);
+              return;
+            }
+          }
+
+          const res = await fetch(`${apiBaseUrl}/api/user/bulk-upload`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              ...(token ? { Authorization: `Bearer ${token}` } : {}), // ✅ Only add if present
             },
             body: JSON.stringify({ fileData: base64File }),
+            credentials: "include", // ✅ Allows cookies if backend sets token in cookies
           });
 
+          if (res.status === 401) {
+            toast.error("Not authorized. Please log in again.");
+            setUploading(false);
+            return;
+          }
+
+          if (!res.ok) {
+            throw new Error(`Server responded with ${res.status}`);
+          }
+
           const result = await res.json();
+
           if (result.status) {
             toast.success(`Uploaded ${result.created} users successfully!`, {
               style: {
@@ -99,16 +134,16 @@ const Users = () => {
                 padding: "10px",
               },
             });
-            refetch();
+            refetch(); // ✅ Refresh users list
           } else {
-            toast.error(result.message);
+            toast.error(result.message || "Bulk upload failed");
           }
         } catch (err) {
-          console.error(err);
-          toast.error("Bulk upload failed");
+          console.error("Bulk upload failed:", err);
+          toast.error("Bulk upload failed. Check server logs.");
         } finally {
-          setUploading(false); // ✅ Stop loading
-          e.target.value = ""; // reset input so user can upload same file again if needed
+          setUploading(false);
+          e.target.value = ""; // Reset input so user can re-upload same file
         }
       };
 
@@ -420,9 +455,8 @@ const Users = () => {
           />
           <Button
             label={uploading ? "Uploading..." : "Upload Excel"}
-            className={`flex flex-row-reverse gap-1 items-center rounded-md 2xl:py-2.5 ${
-              uploading ? "bg-gray-400 cursor-not-allowed" : "bg-[#229ea6] text-white"
-            }`}
+            className={`flex flex-row-reverse gap-1 items-center rounded-md 2xl:py-2.5 ${uploading ? "bg-gray-400 cursor-not-allowed" : "bg-[#229ea6] text-white"
+              }`}
             onClick={() => !uploading && document.getElementById("excelInput").click()}
             disabled={uploading}
           />
