@@ -520,8 +520,8 @@ export const sendTaskReminder = async (req, res) => {
       }
 
       if (user.phone) {
-        await sendWhatsAppTemplate(user.phone, "taskgo_reminder", [
-          user.name,
+        await sendWhatsAppTemplate(user.phone, "taskgo_reminder_1", [
+          // user.name,
           task.title,
           new Date(task.date).toDateString(),
         ]);
