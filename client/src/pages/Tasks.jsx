@@ -1,6 +1,6 @@
-// Tasks.jsx
+// ✅ Inside Tasks.jsx
 import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom"; // ✅ Make sure useNavigate is imported
 import Loading from "../components/Loader";
 import Title from "../components/Title";
 import Button from "../components/Button";
@@ -17,6 +17,8 @@ const TASK_TYPE = {
 
 const Tasks = () => {
   const params = useParams();
+  const navigate = useNavigate(); // ✅ initialize navigate
+
   const status = params?.status || "";
 
   const [open, setOpen] = useState(false);
@@ -53,12 +55,12 @@ const Tasks = () => {
   const filteredTasks = searchedTasks.filter((task) => {
     const matchCreatedDate = filterDate
       ? new Date(task.createdAt).toDateString() ===
-      new Date(filterDate).toDateString()
+        new Date(filterDate).toDateString()
       : true;
     const matchDueDate = filterDueDate
       ? task.date &&
-      new Date(task.date).toDateString() ===
-      new Date(filterDueDate).toDateString()
+        new Date(task.date).toDateString() ===
+        new Date(filterDueDate).toDateString()
       : true;
     const matchPriority = filterPriority
       ? task.priority?.toLowerCase() === filterPriority.toLowerCase()
@@ -90,7 +92,6 @@ const Tasks = () => {
     );
   }
 
-  // 🔁 Normal Task Page - Table with Filters & Actions
   return (
     <div className="w-full">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
@@ -98,7 +99,7 @@ const Tasks = () => {
         <div className="flex flex-wrap items-end gap-4">
           {!status && (
             <>
-              {/* Search */}
+              {/* Search Input */}
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-gray-600">Search</label>
                 <input
@@ -106,39 +107,28 @@ const Tasks = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search task title..."
-                  className="w-56 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition bg-white text-gray-800 text-base shadow-sm"
+                  className="w-56 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition bg-white text-gray-800 text-base shadow-sm"
                 />
               </div>
 
-              {/* Created Date */}
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-gray-600">Created Date</label>
-                <input
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                  className="w-44 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition bg-white text-gray-800 text-base shadow-sm"
-                />
-              </div>
-
-              {/* Due Date */}
+              {/* Due Date Filter */}
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-gray-600">Due Date</label>
                 <input
                   type="date"
                   value={filterDueDate}
                   onChange={(e) => setFilterDueDate(e.target.value)}
-                  className="w-44 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition bg-white text-gray-800 text-base shadow-sm"
+                  className="w-44 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition bg-white text-gray-800 text-base shadow-sm"
                 />
               </div>
 
-              {/* Priority */}
+              {/* Priority Filter */}
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-gray-600">Priority</label>
                 <select
                   value={filterPriority}
                   onChange={(e) => setFilterPriority(e.target.value)}
-                  className="w-36 border border-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition bg-white text-gray-800 text-base shadow-sm"
+                  className="w-36 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#229ea6] focus:border-[#229ea6] transition bg-white text-gray-800 text-base shadow-sm"
                 >
                   <option value="">All</option>
                   <option value="High">High</option>
@@ -147,7 +137,7 @@ const Tasks = () => {
                 </select>
               </div>
 
-              {/* Clear Filters */}
+              {/* Clear Filters Button */}
               <button
                 onClick={() => {
                   setFilterDate("");
@@ -155,14 +145,14 @@ const Tasks = () => {
                   setFilterPriority("");
                   setSearchQuery("");
                 }}
-                className="px-4 py-2 bg-gray-300 hover:bg-gray-200 text-gray-700 rounded-xl shadow-sm transition font-medium"
+                className="px-4 py-2 bg-gray-300 hover:bg-gray-200 text-gray-700 rounded-md shadow-sm transition font-medium"
               >
                 Clear
               </button>
             </>
           )}
 
-          {/* Create Task */}
+          {/* Create Task Button */}
           {!status && (
             <Button
               onClick={() => setOpen(true)}
@@ -171,10 +161,17 @@ const Tasks = () => {
               className="flex flex-row-reverse gap-1 items-center bg-[#229ea6] text-white rounded-md py-2"
             />
           )}
+
+          {/* ✅ Assigned Task Button - Navigation */}
+          <Button
+            onClick={() => navigate("/userproject")} // ✅ redirect properly
+            label="Assigned Task"
+            className="flex flex-row-reverse gap-1 items-center bg-[#229ea6] text-white rounded-md py-2"
+          />
         </div>
       </div>
 
-      {/* ✅ Always Table View */}
+      {/* Task Table */}
       <Table tasks={filteredTasks} showFiltersAndActions={false} />
 
       <AddTask open={open} setOpen={setOpen} />
