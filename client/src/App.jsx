@@ -111,14 +111,20 @@ const App = () => {
   const { user } = useSelector((state) => state.auth);
   const [showPopup, setShowPopup] = useState(false);
 
-  // ✅ Trigger popup after 10 seconds when logged in
+  // ✅ Trigger popup after 10 seconds once per login session
   useEffect(() => {
     if (user) {
-      const timer = setTimeout(() => {
-        setShowPopup(true);
-      }, 10000);
+      const popupKey = `updatePopupShown_${user._id}`; // unique per user
+      const hasShown = localStorage.getItem(popupKey);
 
-      return () => clearTimeout(timer);
+      if (!hasShown) {
+        const timer = setTimeout(() => {
+          setShowPopup(true);
+          localStorage.setItem(popupKey, "true"); // mark as shown
+        }, 10000);
+
+        return () => clearTimeout(timer);
+      }
     }
   }, [user]);
 

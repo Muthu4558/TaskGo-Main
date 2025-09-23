@@ -5,12 +5,16 @@ import { BsThreeDots } from "react-icons/bs";
 import { HiDuplicate } from "react-icons/hi";
 import { MdAdd, MdOutlineEdit } from "react-icons/md";
 import { RiDeleteBin6Line } from "react-icons/ri";
-import { Menu, Transition } from "@headlessui/react";
+import { Menu, Transition, Portal } from "@headlessui/react";
 import AddTask from "./AddTask";
 import AddSubTask from "./AddSubTask";
 import ConfirmatioDialog from "../Dialogs";
-import { useDuplicateTaskMutation, useTrashTaskMutation } from "../../redux/slices/api/taskApiSlice";
+import {
+  useDuplicateTaskMutation,
+  useTrashTaskMutation,
+} from "../../redux/slices/api/taskApiSlice";
 import { toast } from "sonner";
+import { useFloating, offset, flip, shift, autoUpdate } from "@floating-ui/react";
 
 const TaskDialog = ({ task }) => {
   const [open, setOpen] = useState(false);
@@ -22,16 +26,22 @@ const TaskDialog = ({ task }) => {
   const [deleteTask] = useTrashTaskMutation();
   const [duplicateTask] = useDuplicateTaskMutation();
 
+  // floating-ui positioning
+  const { refs, floatingStyles } = useFloating({
+    placement: "bottom-end",
+    middleware: [offset(8), flip(), shift()],
+    whileElementsMounted: autoUpdate,
+  });
+
   const duplicateHanlder = async () => {
     try {
       const res = await duplicateTask(task._id).unwrap();
-
       toast.success(res?.message, {
         style: {
           backgroundColor: "#4caf50",
           color: "#fff",
           fontSize: "16px",
-          padding: "10px"
+          padding: "10px",
         },
       });
 
@@ -39,15 +49,14 @@ const TaskDialog = ({ task }) => {
         setOpenDialog(false);
         window.location.reload();
       }, 1500);
-
-    } catch (error) {
+    } catch (err) {
       console.log(err);
       toast.error(err?.data?.message || err.error);
     }
   };
 
   const deleteClicks = () => {
-    setOpenDialog(true)
+    setOpenDialog(true);
   };
 
   const deleteHandler = async () => {
@@ -58,7 +67,7 @@ const TaskDialog = ({ task }) => {
           backgroundColor: "#4caf50",
           color: "#fff",
           fontSize: "16px",
-          padding: "10px"
+          padding: "10px",
         },
       });
 
@@ -66,7 +75,6 @@ const TaskDialog = ({ task }) => {
         setOpenDialog(false);
         window.location.reload();
       }, 1500);
-
     } catch (error) {
       console.log(error);
       toast.error("Not Authorized. Try login as Admin", {
@@ -74,17 +82,11 @@ const TaskDialog = ({ task }) => {
           backgroundColor: "#f44336",
           color: "#fff",
           fontSize: "16px",
-          padding: "10px"
+          padding: "10px",
         },
       });
-    };
-
-    setTimeout(() => {
-      setOpenDialog(false);
-      window.location.reload();
-    }, 1500);
+    }
   };
-
 
   const items = [
     {
@@ -94,17 +96,17 @@ const TaskDialog = ({ task }) => {
     },
     {
       label: "Edit",
-      icon: <MdOutlineEdit className='mr-2 h-5 w-5' aria-hidden='true' />,
+      icon: <MdOutlineEdit className="mr-2 h-5 w-5" aria-hidden="true" />,
       onClick: () => setOpenEdit(true),
     },
     {
       label: "Add More-Task",
-      icon: <MdAdd className='mr-2 h-5 w-5' aria-hidden='true' />,
+      icon: <MdAdd className="mr-2 h-5 w-5" aria-hidden="true" />,
       onClick: () => setOpen(true),
     },
     {
       label: "Duplicate",
-      icon: <HiDuplicate className='mr-2 h-5 w-5' aria-hidden='true' />,
+      icon: <HiDuplicate className="mr-2 h-5 w-5" aria-hidden="true" />,
       onClick: () => duplicateHanlder(),
     },
   ];
@@ -112,46 +114,72 @@ const TaskDialog = ({ task }) => {
   return (
     <>
       <div>
-        <Menu as='div' className='relative inline-block text-left'>
-          <Menu.Button className='inline-flex w-full justify-center rounded-md px-4 py-2 text-sm font-medium text-gray-600 '>
+        <Menu as="div" className="relative inline-block text-left">
+          <Menu.Button
+            ref={refs.setReference}
+            className="inline-flex w-full justify-center rounded-md px-4 py-2 text-sm font-medium text-gray-600"
+          >
             <BsThreeDots />
           </Menu.Button>
-          <Menu.Items className='absolute p-4 right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none'>
-            <div className='px-1 py-1 space-y-2'>
-              {items.map((el) => (
-                <Menu.Item key={el.label}>
-                  {({ active }) => (
-                    <button
-                      onClick={el?.onClick}
-                      className={`${active ? "bg-[#229ea6] text-white" : "text-gray-900"
-                        } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                    >
-                      {el.icon}
-                      {el.label}
-                    </button>
-                  )}
-                </Menu.Item>
-              ))}
-            </div>
 
-            <div className='px-1 py-1'>
-              <Menu.Item>
-                {({ active }) => (
-                  <button
-                    onClick={() => deleteClicks()}
-                    className={`${active ? "bg-red-300 text-white" : "text-red-800"
-                      } group flex w-full items-center rounded-md px-2 py-2 text-sm`}
-                  >
-                    <RiDeleteBin6Line
-                      className='mr-2 h-5 w-5 text-red-400'
-                      aria-hidden='true'
-                    />
-                    Delete
-                  </button>
-                )}
-              </Menu.Item>
-            </div>
-          </Menu.Items>
+          <Transition
+            as={Fragment}
+            enter="transition ease-out duration-200"
+            enterFrom="opacity-0 scale-95 -translate-y-1"
+            enterTo="opacity-100 scale-100 translate-y-0"
+            leave="transition ease-in duration-150"
+            leaveFrom="opacity-100 scale-100 translate-y-0"
+            leaveTo="opacity-0 scale-95 -translate-y-1"
+          >
+            <Portal>
+              <Menu.Items
+                ref={refs.setFloating}
+                style={floatingStyles}
+                className="z-[9999] w-56 origin-top-right 
+                divide-y divide-gray-100 rounded-2xl bg-white shadow-lg ring-1 
+                ring-black/5 focus:outline-none transition-all duration-200"
+              >
+                <div className="px-1 py-1 space-y-2">
+                  {items.map((el) => (
+                    <Menu.Item key={el.label}>
+                      {({ active }) => (
+                        <button
+                          onClick={el?.onClick}
+                          className={`${
+                            active
+                              ? "bg-[#229ea6] text-white"
+                              : "text-gray-900"
+                          } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
+                        >
+                          {el.icon}
+                          {el.label}
+                        </button>
+                      )}
+                    </Menu.Item>
+                  ))}
+                </div>
+
+                <div className="px-1 py-1">
+                  <Menu.Item>
+                    {({ active }) => (
+                      <button
+                        onClick={() => deleteClicks()}
+                        className={`${
+                          active ? "bg-red-300 text-white" : "text-red-800"
+                        } group flex w-full items-center rounded-md px-2 py-2 text-sm transition-colors`}
+                      >
+                        <RiDeleteBin6Line
+                          className="mr-2 h-5 w-5 text-red-400"
+                          aria-hidden="true"
+                        />
+                        Delete
+                      </button>
+                    )}
+                  </Menu.Item>
+                </div>
+              </Menu.Items>
+            </Portal>
+          </Transition>
         </Menu>
       </div>
 
