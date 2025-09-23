@@ -12,6 +12,7 @@ import { useSelector } from "react-redux";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { FaBell } from "react-icons/fa";
 import { ImSpinner2 } from "react-icons/im";
+import { HiDuplicate } from "react-icons/hi";
 
 // Dynamically import XLSX
 const XLSX = React.lazy(() => import("xlsx"));
@@ -20,6 +21,7 @@ const ICONS1 = {
   todo: <MdCheckBoxOutlineBlank />,
   "in progress": <MdAccessTime />,
   completed: <MdCheckCircle />,
+  duplicate: <HiDuplicate />
 };
 
 const Table = ({ tasks = [], showFiltersAndActions = true }) => {

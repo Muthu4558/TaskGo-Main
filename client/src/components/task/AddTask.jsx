@@ -19,7 +19,7 @@ import { useCreateTaskMutation, useUpdateTaskMutation } from "../../redux/slices
 import { toast } from "sonner";
 import { dateFormatter } from "../../utils";
 
-const LISTS = ["TODO", "IN PROGRESS", "COMPLETED"];
+const LISTS = ["TODO", "IN PROGRESS", "COMPLETED", "DUPLICATE"];
 const PRIORIRY = ["HIGH", "MEDIUM", "LOW"];
 
 const uploadedFileURLs = [];
